@@ -31,12 +31,12 @@ forge script script/MintSampleAssets.s.sol \
 echo ""
 echo "=== Step 3: Register tokens via Rayls API ==="
 
-# Register InvoiceToken (ERC721 = standard 2)
-echo "  Registering InvoiceToken (ERC721)..."
+# Register InvoiceToken (ERC20 = standard 1)
+echo "  Registering InvoiceToken (ERC20)..."
 curl -s -X POST "$BACKEND_URL/api/user/tokens" \
   -H "Authorization: Bearer $USER_AUTH_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"name\": \"Fideza Invoice Token\", \"symbol\": \"FINV\", \"address\": \"$INVOICE_TOKEN_ADDRESS\", \"uri\": \"\", \"standard\": 2}"
+  -d "{\"name\": \"Fideza Invoice Token\", \"symbol\": \"FINV\", \"address\": \"$INVOICE_TOKEN_ADDRESS\", \"uri\": \"\", \"standard\": 1}"
 echo ""
 
 # Register BondToken (ERC20 = standard 1)
