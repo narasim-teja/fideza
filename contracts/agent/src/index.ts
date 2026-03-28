@@ -254,11 +254,11 @@ async function runPortfolioPipeline(constraintsJson: string) {
   console.log("=".repeat(60));
   const attestation = await attestPortfolio(portfolio, portfolioId, bonds, wallet);
 
-  // 6. BRIDGE (stub)
+  // 6. BRIDGE — Submit attestation to public chain + bridge shares
   console.log(`\n${"=".repeat(60)}`);
-  console.log("[BRIDGE] Preparing for cross-chain bridge...");
+  console.log("[BRIDGE] Submitting attestation + bridging shares...");
   console.log("=".repeat(60));
-  await bridgePortfolioShares(shareTokenAddress, attestation, wallet);
+  const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet);
 
   // Summary
   console.log(`\n${"=".repeat(60)}`);
@@ -267,6 +267,8 @@ async function runPortfolioPipeline(constraintsJson: string) {
   console.log(`  Portfolio ID:       ${portfolioId}`);
   console.log(`  Share Token:        ${shareTokenAddress}`);
   console.log(`  Create TX:          ${txHash}`);
+  console.log(`  Attestation TX:     ${bridgeResult.attestationTxHash}`);
+  console.log(`  Bridge TX:          ${bridgeResult.bridgeTxHash}`);
   console.log(`  Bonds:              ${attestation.numBonds}`);
   console.log(`  Diversification:    ${attestation.diversificationScore}/10`);
   console.log(`  Weighted Yield:     ${attestation.weightedCouponBps} bps`);

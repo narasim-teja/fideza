@@ -64,6 +64,12 @@ export const config = {
   userAuthKey: opt("USER_AUTH_KEY", ""),
   operatorAuthKey: opt("OPERATOR_AUTH_KEY", ""),
 
+  // Phase 8: Public Chain contracts
+  portfolioAttestationAddress: opt("PORTFOLIO_ATTESTATION_ADDRESS", "0x"),
+  bondCatalogAddress: opt("BOND_CATALOG_ADDRESS", "0x"),
+  aiAttestationVerifierAddress: opt("AI_ATTESTATION_VERIFIER_ADDRESS", "0x"),
+  fidezaLendingPoolAddress: opt("FIDEZA_LENDING_POOL_ADDRESS", "0x"),
+
   // AI provider settings
   aiProvider: (opt("AI_PROVIDER", "openrouter")) as
     | "anthropic"
@@ -92,4 +98,5 @@ export const abis = {
   bondPropertyRegistry: loadABI("BondPropertyRegistry"),
   portfolioVault: loadABI("PortfolioVault"),
   vaultShareToken: loadABI("VaultShareToken"),
+  portfolioAttestation: loadABI("PortfolioAttestation"),
 };

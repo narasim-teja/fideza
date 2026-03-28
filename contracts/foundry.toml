@@ -9,3 +9,4 @@ evm_version = "paris"
 
 [rpc_endpoints]
 privacy_ledger = "${PRIVACY_NODE_RPC_URL}"
+public_chain = "${PUBLIC_CHAIN_RPC_URL}"
