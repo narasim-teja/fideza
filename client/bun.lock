@@ -7,6 +7,7 @@
       "dependencies": {
         "@base-ui/react": "^1.3.0",
         "@privy-io/react-auth": "^3.18.0",
+        "@privy-io/wagmi": "^4.0.3",
         "@tanstack/react-query": "^5.95.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -319,6 +320,8 @@
     "@privy-io/routes": ["@privy-io/routes@0.0.9", "", { "dependencies": { "@privy-io/api-types": "0.7.0" } }, "sha512-YL99iZiapcHMubW9maRV0zB5O02Iptj4Xj0uhyJHX644nQUoYd1orakD12/nghqXVB/u9njWrJiebh/XYgfnBA=="],
 
     "@privy-io/urls": ["@privy-io/urls@0.0.3", "", {}, "sha512-cococ82ycPJc+wSCHUG0TrVJXF2PIkmDH8TLV+oGqBr14Q7ziRI63aCFIp6FpSRhdDDo9jmB0VR9NjCak4ptMA=="],
+
+    "@privy-io/wagmi": ["@privy-io/wagmi@4.0.3", "", { "peerDependencies": { "@privy-io/react-auth": "^3", "react": ">=18", "viem": "2.47.4", "wagmi": ">=2" } }, "sha512-TxdLFXHZNYizet4AJzQJxqkqH0CjxwBQOJyu6MWlv3JbCj3ceFvgsD+r1qNOScRL5GLoduA7kwkjsE8NoPPgdA=="],
 
     "@react-aria/focus": ["@react-aria/focus@3.21.5", "", { "dependencies": { "@react-aria/interactions": "^3.27.1", "@react-aria/utils": "^3.33.1", "@react-types/shared": "^3.33.1", "@swc/helpers": "^0.5.0", "clsx": "^2.0.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react-dom": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1" } }, "sha512-V18fwCyf8zqgJdpLQeDU5ZRNd9TeOfBbhLgmX77Zr5ae9XwaoJ1R3SFJG1wCJX60t34AW+aLZSEEK+saQElf3Q=="],
 
