@@ -240,6 +240,8 @@ export interface PortfolioConstraints {
   maturityPreference?: string;
   currencyPreference?: string;
   riskTolerance?: string;
+  /** Investment amount in wei (USDr). When set, allocation amounts are scaled proportionally. */
+  investmentAmountWei?: bigint;
 }
 
 export interface RatedBondOnChain {

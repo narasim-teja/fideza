@@ -55,70 +55,79 @@ export async function bridgePortfolioShares(
     publicWallet,
   );
 
-  const attestTx = await portfolioAttestation.submitAttestation(
-    attestation.portfolioId,
-    attestation.totalValue,
-    attestation.weightedCouponBps,
-    attestation.numBonds,
-    attestation.diversificationScore,
-    attestation.methodologyHash,
-    attestation.signature,
-    { type: 0 },
-  );
-  const attestReceipt = await attestTx.wait();
-  console.log(`  Attestation submitted: TX ${attestReceipt.hash}`);
-  console.log(`  Explorer: https://testnet-explorer.rayls.com/tx/${attestReceipt.hash}`);
-
-  // -----------------------------------------------------------------------
-  // 2. Bridge vault shares to public chain via teleportToPublicChain
-  // -----------------------------------------------------------------------
-  console.log("  Bridging vault shares to public chain...");
-
+  // Run attestation (public chain) and bridge prep (privacy node) in parallel
   const shareToken = new ethers.Contract(
     shareTokenAddress,
     abis.vaultShareToken,
     privacyWallet,
   );
 
-  // Get total balance to bridge
-  const balance = await shareToken.balanceOf(privacyWallet.address);
-  if (balance === 0n) {
-    console.log("  No share tokens to bridge (balance = 0)");
+  const publicChainId = 7295799;
+  const registeredKey = process.env.REGISTERED_PRIVATE_KEY;
+
+  const [attestReceipt, bridgePrep] = await Promise.all([
+    // Branch 1: Submit attestation on public chain
+    (async () => {
+      const attestTx = await portfolioAttestation.submitAttestation(
+        attestation.portfolioId,
+        attestation.totalValue,
+        attestation.weightedCouponBps,
+        attestation.numBonds,
+        attestation.diversificationScore,
+        attestation.methodologyHash,
+        attestation.signature,
+        { type: 0 },
+      );
+      const receipt = await attestTx.wait();
+      console.log(`  Attestation submitted: TX ${receipt.hash}`);
+      console.log(`  Explorer: https://testnet-explorer.rayls.com/tx/${receipt.hash}`);
+      return receipt;
+    })(),
+
+    // Branch 2: Prepare bridge on privacy node (transfer to registered if needed)
+    (async () => {
+      console.log("  Preparing bridge (parallel with attestation)...");
+      const balance = await shareToken.balanceOf(privacyWallet.address);
+      if (balance === 0n) {
+        console.log("  No share tokens to bridge (balance = 0)");
+        return { balance: 0n, bridgeWallet: privacyWallet, bridgeShareToken: shareToken };
+      }
+      console.log(`  Share token balance: ${ethers.formatEther(balance)}`);
+
+      let bridgeWallet = privacyWallet;
+      let bridgeShareToken = shareToken;
+
+      if (registeredKey && registeredKey !== config.deployerPrivateKey) {
+        const registeredWallet = new ethers.Wallet(registeredKey, privacyWallet.provider!);
+        console.log(`  Registered bridge address: ${registeredWallet.address}`);
+        console.log(`  Transferring shares to registered address for bridge...`);
+        const transferTx = await shareToken.transfer(registeredWallet.address, balance, { type: 0 });
+        await transferTx.wait();
+        console.log(`  Transferred ${ethers.formatEther(balance)} share tokens`);
+        bridgeWallet = registeredWallet;
+        bridgeShareToken = new ethers.Contract(shareTokenAddress, abis.vaultShareToken, registeredWallet);
+      }
+
+      return { balance, bridgeWallet, bridgeShareToken };
+    })(),
+  ]);
+
+  // -----------------------------------------------------------------------
+  // 2. Bridge vault shares to public chain via teleportToPublicChain
+  // -----------------------------------------------------------------------
+  if (bridgePrep.balance === 0n) {
     return { attestationTxHash: attestReceipt.hash, bridgeTxHash: "no-balance" };
   }
 
-  console.log(`  Share token balance: ${ethers.formatEther(balance)}`);
-
-  // Determine bridge wallet — teleportToPublicChain requires onlyRegisteredUsers.
-  // If REGISTERED_PRIVATE_KEY is configured and different from deployer, transfer
-  // shares to the registered address first, then bridge from there.
-  const registeredKey = process.env.REGISTERED_PRIVATE_KEY;
-  let bridgeWallet = privacyWallet;
-  let bridgeShareToken = shareToken;
-  const publicChainId = 7295799;
-
-  if (registeredKey && registeredKey !== config.deployerPrivateKey) {
-    const registeredWallet = new ethers.Wallet(registeredKey, privacyWallet.provider!);
-    console.log(`  Registered bridge address: ${registeredWallet.address}`);
-    console.log(`  Transferring shares to registered address for bridge...`);
-
-    // Transfer from deployer to registered address
-    const transferTx = await shareToken.transfer(registeredWallet.address, balance, { type: 0 });
-    await transferTx.wait();
-    console.log(`  Transferred ${ethers.formatEther(balance)} share tokens`);
-
-    bridgeWallet = registeredWallet;
-    bridgeShareToken = new ethers.Contract(shareTokenAddress, abis.vaultShareToken, registeredWallet);
-  }
-
-  const recipient = bridgeWallet.address;
+  const recipient = bridgePrep.bridgeWallet.address;
+  console.log(`  Bridging vault shares to public chain...`);
   console.log(`  Destination: public chain (ID: ${publicChainId})`);
   console.log(`  Recipient: ${recipient}`);
 
   try {
-    const bridgeTx = await bridgeShareToken.teleportToPublicChain(
+    const bridgeTx = await bridgePrep.bridgeShareToken.teleportToPublicChain(
       recipient,
-      balance,
+      bridgePrep.balance,
       publicChainId,
       { type: 0 },
     );
@@ -137,11 +146,13 @@ export async function bridgePortfolioShares(
       const registeredPublicWallet = new ethers.Wallet(registeredKey!, publicProvider);
       const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function transfer(address,uint256) returns (bool)"];
 
-      // Poll for mirror token to arrive (relayer takes 30-60s)
+      // Poll for mirror token with optimized intervals
+      // Relay takes 30-60s: skip first 15s, then poll frequently in the likely window
+      const pollIntervals = [15000, 5000, 5000, 5000, 5000, 8000, 10000, 12000, 15000];
       let mirrorBalance = BigInt(0);
       const mirrorToken = new ethers.Contract(shareTokenAddress, erc20Abi, registeredPublicWallet);
-      for (let attempt = 0; attempt < 20; attempt++) {
-        await new Promise((r) => setTimeout(r, 5000));
+      for (const interval of pollIntervals) {
+        await new Promise((r) => setTimeout(r, interval));
         try {
           mirrorBalance = await mirrorToken.balanceOf(registeredPublicWallet.address);
           if (mirrorBalance > BigInt(0)) {

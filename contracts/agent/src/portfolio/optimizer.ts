@@ -51,14 +51,19 @@ RISK PHILOSOPHY:
 - Collateralized bonds should be preferred when risk scores are similar
 - Higher-yield bonds (BB range) are acceptable but must be offset by IG bonds
 
-Output ONLY valid JSON (no markdown fences, no extra text):
-{
-  "allocations": [
-    { "assetId": "0x...", "weightBps": 1000, "rationale": "..." },
-    ...
-  ],
-  "portfolioRationale": "..."
-}`;
+WEIGHT MATH — DO THIS BEFORE RESPONDING:
+1. Pick your bonds and assign each a weightBps integer
+2. Add all weightBps values — the sum MUST equal exactly 10000
+3. If the sum is not 10000, adjust weights until it is
+4. Double-check: sum of all weightBps === 10000
+
+CRITICAL: You MUST respond with ONLY a JSON object. No explanation, no markdown, no prose before or after.
+Do NOT write any text before the opening brace. Do NOT write any text after the closing brace.
+Your ENTIRE response must be exactly this structure:
+
+{"allocations":[{"assetId":"0x...full hash","weightBps":909,"rationale":"..."},...],"portfolioRationale":"..."}
+
+Begin your response with the character { and end it with the character }.`;
 }
 
 function buildUserPrompt(
@@ -82,7 +87,7 @@ function buildUserPrompt(
 ${JSON.stringify(bondSummary, null, 2)}
 
 USER CONSTRAINTS:
-${JSON.stringify(constraints, null, 2)}
+${JSON.stringify(constraints, bigintReplacer, 2)}
 
 Construct the optimal portfolio. Select at least ${constraints.minBonds} bonds. Weights must sum to exactly 10000 bps. No single bond may exceed ${constraints.maxSingleExposurePct * 100} bps.`;
 }
@@ -148,8 +153,20 @@ async function llmOptimize(
     const userPrompt = buildUserPrompt(bonds, constraints);
 
     console.log("  Pass 1: LLM optimization...");
-    const raw = await callLLM(systemPrompt, userPrompt);
-    const parsed = parseJSON<LLMResponse>(raw);
+    let raw = await callLLM(systemPrompt, userPrompt);
+    let parsed: LLMResponse;
+
+    try {
+      parsed = parseJSON<LLMResponse>(raw);
+    } catch {
+      // Retry once with a very direct prompt
+      console.log("  LLM returned non-JSON, retrying with stricter prompt...");
+      raw = await callLLM(
+        "You are a JSON API. You ONLY output valid JSON objects. Never output explanations or prose.",
+        userPrompt + "\n\nRespond with ONLY a JSON object starting with { — no other text.",
+      );
+      parsed = parseJSON<LLMResponse>(raw);
+    }
 
     const error = validateLLMOutput(parsed.allocations, bonds, constraints);
     if (error) {
@@ -159,11 +176,15 @@ async function llmOptimize(
 
     // Build PortfolioAllocation objects
     const bondMap = new Map(bonds.map((b) => [b.assetId, b]));
+    const investmentWei = constraints.investmentAmountWei;
     const allocations: PortfolioAllocation[] = parsed.allocations
       .filter((a) => a.weightBps > 0)
       .map((a) => {
         const bond = bondMap.get(a.assetId)!;
-        const amount = (bond.availableSupply * BigInt(a.weightBps)) / 10000n;
+        let amount = investmentWei
+          ? (investmentWei * BigInt(a.weightBps)) / 10000n
+          : (bond.availableSupply * BigInt(a.weightBps)) / 10000n;
+        if (amount > bond.availableSupply) amount = bond.availableSupply;
         return {
           assetId: a.assetId,
           bondTokenAddress: bond.bondTokenAddress,
@@ -249,8 +270,12 @@ function greedyAllocate(
   }
 
   // Build allocations
+  const investmentWei = constraints.investmentAmountWei;
   const allocations: PortfolioAllocation[] = selected.map((bond, i) => {
-    const amount = (bond.availableSupply * BigInt(weights[i])) / 10000n;
+    let amount = investmentWei
+      ? (investmentWei * BigInt(weights[i])) / 10000n
+      : (bond.availableSupply * BigInt(weights[i])) / 10000n;
+    if (amount > bond.availableSupply) amount = bond.availableSupply;
     return {
       assetId: bond.assetId,
       bondTokenAddress: bond.bondTokenAddress,

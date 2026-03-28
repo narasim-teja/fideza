@@ -29,23 +29,25 @@ export async function constructPortfolio(
   );
   console.log(`  Portfolio ID: ${portfolioId}`);
 
-  // 2. Approve each bond token to the vault
-  console.log(`  Approving ${portfolio.allocations.length} bond tokens...`);
-  for (const alloc of portfolio.allocations) {
-    // Use a minimal ERC-20 ABI for approve — works for all token types
+  // 2. Approve each bond token to the vault (parallel with manual nonces)
+  console.log(`  Approving ${portfolio.allocations.length} bond tokens (parallel)...`);
+  let currentNonce = await provider.getTransactionCount(wallet.address, "pending");
+
+  const approvalPromises = portfolio.allocations.map((alloc, i) => {
     const token = new ethers.Contract(
       alloc.bondTokenAddress,
       ["function approve(address spender, uint256 amount) returns (bool)"],
       wallet,
     );
-    const tx = await token.approve(
-      config.portfolioVaultAddress,
-      alloc.amount,
-      { type: 0 },
-    );
-    await tx.wait();
-    console.log(`    Approved ${alloc.assetId.slice(0, 10)}... → ${alloc.amount} tokens`);
-  }
+    return token
+      .approve(config.portfolioVaultAddress, alloc.amount, { type: 0, nonce: currentNonce + i })
+      .then(async (tx: ethers.TransactionResponse) => {
+        await tx.wait();
+        console.log(`    Approved ${alloc.assetId.slice(0, 10)}... → ${alloc.amount} tokens`);
+      });
+  });
+
+  await Promise.all(approvalPromises);
 
   // 3. Create portfolio in vault
   console.log("  Creating portfolio in PortfolioVault...");
@@ -75,8 +77,8 @@ export async function constructPortfolio(
   );
   console.log(`  VaultShareToken deployed: ${shareTokenAddress}`);
 
-  // 5. Register via Rayls API (if credentials configured)
-  await registerTokenViaAPI(shareTokenAddress, portfolioId);
+  // 5. Register via Rayls API (fire-and-forget — non-critical)
+  registerTokenViaAPI(shareTokenAddress, portfolioId).catch(() => {});
 
   return {
     portfolioId,

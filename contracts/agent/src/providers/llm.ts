@@ -28,7 +28,7 @@ async function callOpenRouterRaw(
 
   const r = await client.chat.completions.create({
     model,
-    max_tokens: 1024,
+    max_tokens: 2048,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -94,7 +94,7 @@ export async function callLLM(
     const client = new OpenAI({ apiKey: config.openaiApiKey });
     const r = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -118,7 +118,7 @@ export async function callLLM(
   const client = new Anthropic({ apiKey: config.anthropicApiKey });
   const r = await client.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: systemPrompt,
     messages: [{ role: "user", content: userPrompt }],
   });

@@ -202,6 +202,13 @@ async function runPortfolioPipeline(constraintsJson: string) {
   console.log("=".repeat(60));
   const constraints = parseConstraints(constraintsJson);
   validateConstraints(constraints);
+
+  // Thread investment amount if provided via CLI
+  const investmentArg = getArg("investment");
+  if (investmentArg) {
+    constraints.investmentAmountWei = ethers.parseEther(investmentArg);
+    console.log(`  Investment amount: ${investmentArg} USDr (${constraints.investmentAmountWei} wei)`);
+  }
   console.log(`  Rating range: ${constraints.maxRating ?? "AAA"} to ${constraints.minRating}`);
   console.log(`  Target yield: ${constraints.targetYieldBps} bps`);
   console.log(`  Min bonds: ${constraints.minBonds}`);
