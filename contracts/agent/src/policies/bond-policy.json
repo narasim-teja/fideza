@@ -1,0 +1,39 @@
+{
+  "policyVersion": "1.0.0",
+  "assetType": "BOND",
+  "allowedJurisdictions": ["BR", "US", "UK", "EU", "SG", "JP", "CH", "CA", "AU", "DE", "FR", "NL"],
+  "sanctionedJurisdictions": ["KP", "IR", "SY", "CU", "RU"],
+  "requiredFields": [
+    "bondId", "isin", "issuer", "issuerName", "issuerJurisdiction",
+    "issuerSector", "issuerCreditRating", "parValue", "currency",
+    "couponRateBps", "couponFrequency", "issueDate", "maturityDate",
+    "seniority", "offeringType"
+  ],
+  "valueLimits": { "minParValue": 100, "maxParValue": 1000000 },
+  "maturityRange": { "minYears": 1, "maxYears": 30 },
+  "couponRange": { "minBps": 0, "maxBps": 3000 },
+  "recognizedRatings": [
+    "AAA", "AA+", "AA", "AA-", "A+", "A", "A-",
+    "BBB+", "BBB", "BBB-",
+    "BB+", "BB", "BB-", "B+", "B", "B-",
+    "CCC+", "CCC", "CCC-", "CC", "C", "D"
+  ],
+  "disclosure": {
+    "disclosed": ["seniority", "currency", "couponFrequency", "parValue", "offeringType", "qualifiedBuyerOnly"],
+    "bucketed": [
+      { "field": "couponRateBps", "reason": "Exact rate competitively sensitive" },
+      { "field": "maturityDate", "reason": "Maturity bucket sufficient for duration analysis" },
+      { "field": "issuerCreditRating", "reason": "Credit tier reveals quality without exact rating" }
+    ],
+    "withheld": [
+      { "field": "issuerName", "reason": "Naming issuer could affect public debt pricing" },
+      { "field": "covenantSummary", "reason": "Material non-public terms" },
+      { "field": "isin", "reason": "Identifies the specific issuance" },
+      { "field": "termSheetHash", "reason": "Internal document reference" },
+      { "field": "issuer", "reason": "Institutional identity protected" },
+      { "field": "callProvision", "reason": "Specific call terms are deal-sensitive" },
+      { "field": "collateralType", "reason": "Reduced to boolean hasCollateral" },
+      { "field": "minimumDenomination", "reason": "Deal-specific structuring detail" }
+    ]
+  }
+}

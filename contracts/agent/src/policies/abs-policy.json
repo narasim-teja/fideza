@@ -1,0 +1,37 @@
+{
+  "policyVersion": "1.0.0",
+  "assetType": "ABS_TRANCHE",
+  "allowedJurisdictions": ["BR", "US", "UK", "EU", "SG", "JP", "CH", "CA", "AU", "DE", "FR", "NL"],
+  "sanctionedJurisdictions": ["KP", "IR", "SY", "CU", "RU"],
+  "requiredFields": [
+    "absId", "issuer", "poolType", "totalPoolSize", "totalPoolNotional",
+    "trancheName", "trancheSeniority", "trancheSize",
+    "creditEnhancementBps", "subordinationLevelBps", "currency", "expectedMaturity"
+  ],
+  "poolSizeMinimum": 50,
+  "maxSingleLoanConcentrationPct": 5,
+  "creditScoreMinimum": 620,
+  "delinquency90dMaxPct": 10,
+  "minCreditEnhancementBps": {
+    "senior": 500,
+    "mezzanine": 200,
+    "equity": 0
+  },
+  "disclosure": {
+    "disclosed": ["poolType", "trancheSeniority", "creditEnhancementBps", "subordinationLevelBps", "currency"],
+    "bucketed": [
+      { "field": "expectedMaturity", "reason": "Maturity bucket sufficient for duration analysis" },
+      { "field": "totalPoolSize", "reason": "Pool size bucket reveals scale without precision" },
+      { "field": "totalPoolNotional", "reason": "Notional range prevents exact deal sizing" }
+    ],
+    "withheld": [
+      { "field": "servicerName", "reason": "Could identify the deal" },
+      { "field": "auditorName", "reason": "Could identify the deal" },
+      { "field": "issuer", "reason": "Institutional identity protected" },
+      { "field": "offeringCircularHash", "reason": "Internal document reference" },
+      { "field": "poolTapeHash", "reason": "Internal document reference" },
+      { "field": "trancheName", "reason": "Internal naming convention" },
+      { "field": "loans", "reason": "Individual loan data legally protected, borrower PII" }
+    ]
+  }
+}

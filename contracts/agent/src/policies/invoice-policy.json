@@ -1,0 +1,29 @@
+{
+  "policyVersion": "1.0.0",
+  "assetType": "INVOICE",
+  "allowedJurisdictions": ["BR", "US", "UK", "EU", "SG", "JP", "CH", "CA", "AU", "DE", "FR", "NL"],
+  "sanctionedJurisdictions": ["KP", "IR", "SY", "CU", "RU"],
+  "requiredFields": [
+    "invoiceId", "issuer", "debtorName", "debtorJurisdiction",
+    "debtorCreditRating", "debtorIndustry", "faceValue", "currency",
+    "issueDate", "dueDate", "paymentTerms", "recourseType"
+  ],
+  "valueLimits": { "minFaceValue": 100000, "maxFaceValue": 500000000 },
+  "maturityRange": { "minDays": 7, "maxDays": 180 },
+  "disclosure": {
+    "disclosed": ["currency", "debtorIndustry", "recourseType", "priorityClaim"],
+    "bucketed": [
+      { "field": "faceValue", "reason": "Prevents reverse-engineering issuer revenue" },
+      { "field": "dueDate", "reason": "Maturity bucket sufficient for duration risk" },
+      { "field": "debtorCreditRating", "reason": "Buyer needs quality signal, exact rating proprietary" }
+    ],
+    "withheld": [
+      { "field": "debtorName", "reason": "Commercially sensitive, reveals issuer client relationships" },
+      { "field": "invoiceDocHash", "reason": "Internal document reference" },
+      { "field": "invoiceId", "reason": "Internal identifier" },
+      { "field": "issuer", "reason": "Institutional identity protected" },
+      { "field": "issueDate", "reason": "Exact dates reveal deal timing" },
+      { "field": "previouslyTokenized", "reason": "Internal compliance flag" }
+    ]
+  }
+}

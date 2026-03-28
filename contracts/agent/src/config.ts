@@ -1,26 +1,65 @@
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 function req(name: string): string {
   const v = process.env[name];
-  if (!v) {
+  if (!v || v === "0x") {
     console.error(`Missing env var: ${name}`);
     process.exit(1);
   }
   return v;
 }
 
+function opt(name: string, fallback: string): string {
+  return process.env[name] || fallback;
+}
+
+// Load ABI from Foundry compiled artifacts
+function loadABI(contractName: string): any[] {
+  const artifactPath = path.resolve(
+    __dirname,
+    `../../out/${contractName}.sol/${contractName}.json`,
+  );
+  const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"));
+  return artifact.abi;
+}
+
 export const config = {
-  publicChainRpc: req("PUBLIC_CHAIN_RPC_URL"),
-  tokenAddress: req("TOKEN_ADDRESS"),
-  attestationAddress: req("ATTESTATION_ADDRESS"),
+  // Network
+  privacyNodeRpc: req("PRIVACY_NODE_RPC_URL"),
+  publicChainRpc: opt("PUBLIC_CHAIN_RPC_URL", "https://testnet-rpc.rayls.com"),
+
+  // Agent key (must match agentAddress in ComplianceStore)
   agentPrivateKey: req("AGENT_PRIVATE_KEY"),
-  aiProvider: (process.env.AI_PROVIDER || "gemini") as "anthropic" | "openai" | "gemini" | "openrouter",
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
-  openaiApiKey: process.env.OPENAI_API_KEY || "",
-  geminiApiKey: process.env.GEMINI_API_KEY || "",
-  openrouterApiKey: process.env.OPENROUTER_API_KEY || "",
-  openrouterModel: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
+
+  // Contract addresses (Privacy Node)
+  institutionRegistryAddress: req("INSTITUTION_REGISTRY_ADDRESS"),
+  complianceStoreAddress: req("COMPLIANCE_STORE_ADDRESS"),
+  invoiceTokenAddress: req("INVOICE_TOKEN_ADDRESS"),
+  bondTokenAddress: req("BOND_TOKEN_ADDRESS"),
+  absTokenAddress: req("ABS_TOKEN_ADDRESS"),
+
+  // AI provider settings
+  aiProvider: (opt("AI_PROVIDER", "openrouter")) as
+    | "anthropic"
+    | "openai"
+    | "gemini"
+    | "openrouter",
+  anthropicApiKey: opt("ANTHROPIC_API_KEY", ""),
+  openaiApiKey: opt("OPENAI_API_KEY", ""),
+  geminiApiKey: opt("GEMINI_API_KEY", ""),
+  openrouterApiKey: opt("OPENROUTER_API_KEY", ""),
+  openrouterModel: opt("OPENROUTER_MODEL", "auto"),
+};
+
+// ABIs loaded from compiled Foundry artifacts
+export const abis = {
+  invoiceToken: loadABI("InvoiceToken"),
+  bondToken: loadABI("BondToken"),
+  absToken: loadABI("ABSToken"),
+  complianceStore: loadABI("ComplianceStore"),
+  institutionRegistry: loadABI("InstitutionRegistry"),
 };
