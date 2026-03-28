@@ -5,7 +5,7 @@ export const raylsPublicChain = defineChain({
   name: "Rayls Public Testnet",
   nativeCurrency: { name: "USDr", symbol: "USDr", decimals: 18 },
   rpcUrls: {
-    default: { http: ["https://testnet-rpc.rayls.com/"] },
+    default: { http: ["/rpc"] },
   },
   blockExplorers: {
     default: {

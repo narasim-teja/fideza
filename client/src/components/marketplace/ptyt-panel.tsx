@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Hex, Address } from "viem";
 import { parseUnits } from "viem";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ interface PTYTPanelProps {
 
 export function PTYTPanel({ assetId, split }: PTYTPanelProps) {
   const { address } = useAccount();
+  const publicClient = usePublicClient();
   const [splitAmount, setSplitAmount] = useState("");
   const [mergeAmount, setMergeAmount] = useState("");
   const [redeemPTAmount, setRedeemPTAmount] = useState("");
@@ -57,61 +58,80 @@ export function PTYTPanel({ assetId, split }: PTYTPanelProps) {
 
   const matured = isMatured(split.maturityTimestamp);
 
+  async function waitForTx(hash: `0x${string}`) {
+    if (!publicClient) return;
+    await publicClient.waitForTransactionReceipt({ hash });
+  }
+
   async function handleSplit() {
     if (!splitAmount || !address) return;
+    const id = toast.loading("Approving receipt tokens...");
     try {
       const amount = parseUnits(splitAmount, 18);
-      toast.loading("Approving receipt tokens...");
-      await approveAsync(split.receiptTokenAddress, CONTRACTS.ptytSplitter, amount);
-      toast.loading("Splitting into PT + YT...");
-      await splitAsync(assetId, amount);
-      toast.success("Split successful");
+      const approveTx = await approveAsync(split.receiptTokenAddress, CONTRACTS.ptytSplitter, amount);
+      toast.loading("Waiting for approval...", { id });
+      await waitForTx(approveTx);
+      toast.loading("Splitting into PT + YT...", { id });
+      const splitTx = await splitAsync(assetId, amount);
+      toast.loading("Waiting for split...", { id });
+      await waitForTx(splitTx);
+      toast.success("Split successful", { id });
       setSplitAmount("");
     } catch (e: unknown) {
-      toast.error((e as Error).message?.slice(0, 100) || "Split failed");
+      toast.error((e as Error).message?.slice(0, 100) || "Split failed", { id });
     }
   }
 
   async function handleMerge() {
     if (!mergeAmount || !address) return;
+    const id = toast.loading("Approving PT tokens...");
     try {
       const amount = parseUnits(mergeAmount, 18);
-      toast.loading("Approving PT tokens...");
-      await approveAsync(split.ptTokenAddress, CONTRACTS.ptytSplitter, amount);
-      toast.loading("Approving YT tokens...");
-      await approveAsync(split.ytTokenAddress, CONTRACTS.ptytSplitter, amount);
-      toast.loading("Merging PT + YT...");
-      await mergeAsync(assetId, amount);
-      toast.success("Merge successful");
+      const a1 = await approveAsync(split.ptTokenAddress, CONTRACTS.ptytSplitter, amount);
+      toast.loading("Waiting for PT approval...", { id });
+      await waitForTx(a1);
+      toast.loading("Approving YT tokens...", { id });
+      const a2 = await approveAsync(split.ytTokenAddress, CONTRACTS.ptytSplitter, amount);
+      toast.loading("Waiting for YT approval...", { id });
+      await waitForTx(a2);
+      toast.loading("Merging PT + YT...", { id });
+      const mergeTx = await mergeAsync(assetId, amount);
+      toast.loading("Waiting for merge...", { id });
+      await waitForTx(mergeTx);
+      toast.success("Merge successful", { id });
       setMergeAmount("");
     } catch (e: unknown) {
-      toast.error((e as Error).message?.slice(0, 100) || "Merge failed");
+      toast.error((e as Error).message?.slice(0, 100) || "Merge failed", { id });
     }
   }
 
   async function handleRedeemPT() {
     if (!redeemPTAmount) return;
+    const id = toast.loading("Redeeming PT...");
     try {
       const amount = parseUnits(redeemPTAmount, 18);
-      toast.loading("Redeeming PT...");
-      await redeemPTAsync(assetId, amount);
-      toast.success("PT redeemed");
+      const tx = await redeemPTAsync(assetId, amount);
+      toast.loading("Waiting for confirmation...", { id });
+      await waitForTx(tx);
+      toast.success("PT redeemed", { id });
       setRedeemPTAmount("");
     } catch (e: unknown) {
-      toast.error((e as Error).message?.slice(0, 100) || "Redeem failed");
+      toast.error((e as Error).message?.slice(0, 100) || "Redeem failed", { id });
     }
   }
 
   async function handleRedeemYT() {
     if (!redeemYTAmount) return;
+    const id = toast.loading("Redeeming YT...");
     try {
       const amount = parseUnits(redeemYTAmount, 18);
-      toast.loading("Redeeming YT...");
-      await redeemYTAsync(assetId, amount);
-      toast.success("YT redeemed");
+      const tx = await redeemYTAsync(assetId, amount);
+      toast.loading("Waiting for confirmation...", { id });
+      await waitForTx(tx);
+      toast.success("YT redeemed", { id });
       setRedeemYTAmount("");
     } catch (e: unknown) {
-      toast.error((e as Error).message?.slice(0, 100) || "Redeem failed");
+      toast.error((e as Error).message?.slice(0, 100) || "Redeem failed", { id });
     }
   }
 
