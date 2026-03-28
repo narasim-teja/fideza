@@ -3,8 +3,6 @@ import type {
   DisclosureRecommendation,
   PolicyDisclosureConfig,
 } from "../types";
-import { bigintReplacer } from "../types";
-
 import invoicePolicy from "../policies/invoice-policy.json";
 import bondPolicy from "../policies/bond-policy.json";
 import absPolicy from "../policies/abs-policy.json";
@@ -39,7 +37,7 @@ function getBucketedValue(
 
   if (asset.type === "INVOICE") {
     if (field === "faceValue") {
-      const fv = Number(metadata.faceValue);
+      const fv = Number((metadata.faceValue as bigint) / (10n ** 18n));
       if (fv < 5_000_000) return "0-5M";
       if (fv < 25_000_000) return "5M-25M";
       if (fv < 100_000_000) return "25M-100M";

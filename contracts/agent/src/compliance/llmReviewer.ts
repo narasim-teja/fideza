@@ -25,7 +25,7 @@ async function analyzeInvoicePaymentTerms(
 
 - Payment Terms: ${m.paymentTerms}
 - Recourse Type: ${m.recourseType}
-- Face Value: ${Number(m.faceValue).toLocaleString()} ${m.currency}
+- Face Value: ${Number(m.faceValue / (10n ** 18n)).toLocaleString()} ${m.currency}
 - Maturity: ${maturityDays} days
 - Debtor Industry: ${m.debtorIndustry}
 - Debtor Credit Rating: ${m.debtorCreditRating}
@@ -143,7 +143,7 @@ async function analyzeABSPool(
 
 - Pool Type: ${m.poolType}
 - Total Pool Size: ${m.totalPoolSize} loans
-- Total Pool Notional: ${Number(m.totalPoolNotional).toLocaleString()} ${m.currency}
+- Total Pool Notional: ${Number(m.totalPoolNotional / (10n ** 18n)).toLocaleString()} ${m.currency}
 - Tranche Seniority: ${m.trancheSeniority}
 - Credit Enhancement: ${Number(m.creditEnhancementBps)} bps
 - Subordination Level: ${Number(m.subordinationLevelBps)} bps

@@ -1,6 +1,7 @@
 import type { InvoiceMetadata, CheckResult, InvoicePolicy } from "../types";
 
 const DAY_SECONDS = 86400n;
+const DECIMALS_18 = 10n ** 18n;
 
 export function runInvoiceChecks(
   metadata: InvoiceMetadata,
@@ -71,8 +72,8 @@ export function runInvoiceChecks(
     method: "rules_engine",
   });
 
-  // VALUE_LIMITS
-  const fv = Number(metadata.faceValue);
+  // VALUE_LIMITS (faceValue is stored with 18 decimals on-chain)
+  const fv = Number(metadata.faceValue / DECIMALS_18);
   const valueOk =
     fv >= policy.valueLimits.minFaceValue &&
     fv <= policy.valueLimits.maxFaceValue;
