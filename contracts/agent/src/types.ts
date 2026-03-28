@@ -229,6 +229,73 @@ export interface ABSPolicy {
 
 export type AssetPolicy = InvoicePolicy | BondPolicy | ABSPolicy;
 
+// -- Portfolio Construction Pipeline ------------------------------------------
+
+export interface PortfolioConstraints {
+  minRating: string;
+  maxRating?: string;
+  targetYieldBps: number;
+  maxSingleExposurePct: number;
+  minBonds: number;
+  maturityPreference?: string;
+  currencyPreference?: string;
+  riskTolerance?: string;
+}
+
+export interface RatedBondOnChain {
+  assetId: string;
+  bondTokenAddress: string;
+  assetType: string;
+  rating: string;
+  couponRateBps: number;
+  couponRange: string;
+  maturityBucket: string;
+  maturityTimestamp: bigint;
+  seniority: string;
+  currency: string;
+  issuerCategory: string;
+  parValue: bigint;
+  hasCollateral: boolean;
+  riskScore: number;
+  complianceReportHash: string;
+  availableForPortfolio: boolean;
+  availableSupply: bigint;
+}
+
+export interface PortfolioAllocation {
+  assetId: string;
+  bondTokenAddress: string;
+  weightBps: number;
+  amount: bigint;
+  rating: string;
+  couponRateBps: number;
+  assetType: string;
+  maturityTimestamp: bigint;
+  rationale?: string;
+}
+
+export interface OptimizedPortfolio {
+  allocations: PortfolioAllocation[];
+  totalWeightBps: number;
+  weightedCouponBps: number;
+  weightedRiskScore: number;
+  diversificationScore: number;
+  method: "llm" | "greedy";
+}
+
+export interface PortfolioAttestation {
+  portfolioId: string;
+  totalValue: bigint;
+  ratingRange: string;
+  weightedCouponBps: number;
+  avgMaturityMonths: number;
+  diversificationScore: number;
+  numBonds: number;
+  maxSingleExposurePct: number;
+  methodologyHash: string;
+  signature: string;
+}
+
 // -- Helpers ------------------------------------------------------------------
 
 export function bigintReplacer(_key: string, value: unknown): unknown {

@@ -27,6 +27,16 @@ function loadABI(contractName: string): any[] {
   return artifact.abi;
 }
 
+// Load bytecode from Foundry compiled artifacts (for ContractFactory deploys)
+function loadBytecode(contractName: string): string {
+  const artifactPath = path.resolve(
+    __dirname,
+    `../../out/${contractName}.sol/${contractName}.json`,
+  );
+  const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"));
+  return artifact.bytecode.object;
+}
+
 export const config = {
   // Network
   privacyNodeRpc: req("PRIVACY_NODE_RPC_URL"),
@@ -47,6 +57,13 @@ export const config = {
   portfolioVaultAddress: opt("PORTFOLIO_VAULT_ADDRESS", "0x"),
   vaultShareTokenAddress: opt("VAULT_SHARE_TOKEN_ADDRESS", "0x"),
 
+  // Phase 7: Portfolio construction
+  deployerPrivateKey: opt("DEPLOYER_PRIVATE_KEY", ""),
+  deploymentProxyRegistryAddress: opt("DEPLOYMENT_PROXY_REGISTRY", "0x"),
+  backendUrl: opt("BACKEND_URL", ""),
+  userAuthKey: opt("USER_AUTH_KEY", ""),
+  operatorAuthKey: opt("OPERATOR_AUTH_KEY", ""),
+
   // AI provider settings
   aiProvider: (opt("AI_PROVIDER", "openrouter")) as
     | "anthropic"
@@ -58,6 +75,11 @@ export const config = {
   geminiApiKey: opt("GEMINI_API_KEY", ""),
   openrouterApiKey: opt("OPENROUTER_API_KEY", ""),
   openrouterModel: opt("OPENROUTER_MODEL", "auto"),
+};
+
+// Bytecodes for ContractFactory deployment
+export const bytecodes = {
+  vaultShareToken: loadBytecode("VaultShareToken"),
 };
 
 // ABIs loaded from compiled Foundry artifacts

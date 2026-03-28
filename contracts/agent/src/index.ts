@@ -1,18 +1,20 @@
 /**
- * Fideza AI Compliance Agent — Phase 2
+ * Fideza AI Compliance & Portfolio Agent
  *
- * Runs the full 6-stage compliance pipeline per asset:
- * READ → VALIDATE → ANALYZE → DISCLOSE → REPORT → ATTEST
+ * Mode: rate (default) — 6-stage compliance pipeline per asset:
+ *   READ → VALIDATE → ANALYZE → DISCLOSE → REPORT → ATTEST
+ *
+ * Mode: portfolio — 6-stage portfolio construction pipeline:
+ *   PARSE → SCAN → OPTIMIZE → CONSTRUCT → ATTEST → BRIDGE
  *
  * Usage:
- *   npx tsx src/index.ts              # Process all 3 assets
- *   npx tsx src/index.ts --asset invoice
- *   npx tsx src/index.ts --asset bond
- *   npx tsx src/index.ts --asset abs
+ *   npx tsx src/index.ts                          # Rate all 3 assets
+ *   npx tsx src/index.ts --asset invoice           # Rate single asset
+ *   npx tsx src/index.ts --mode portfolio --constraints '{"minRating":"BB-","maxRating":"AA","targetYieldBps":400,"maxSingleExposurePct":15,"minBonds":10,"maturityPreference":"mixed","currencyPreference":"any","riskTolerance":"moderate"}'
  */
 import { ethers } from "ethers";
 import { config } from "./config";
-import type { AssetReadResult, AssetType, ComplianceReport } from "./types";
+import type { AssetReadResult, ComplianceReport } from "./types";
 import { readInvoice, readBond, readABS, checkIssuerKYB } from "./onchain/readAsset";
 import { runRulesEngine } from "./compliance/rulesEngine";
 import { runLLMReview } from "./compliance/llmReviewer";
@@ -23,6 +25,30 @@ import {
   submitAttestation,
   checkAgentAddress,
 } from "./onchain/submitAttestation";
+
+// Portfolio pipeline imports
+import { parseConstraints, validateConstraints } from "./portfolio/constraints";
+import { scanAvailableBonds } from "./portfolio/bondScanner";
+import { optimizePortfolio } from "./portfolio/optimizer";
+import { constructPortfolio } from "./portfolio/vaultConstructor";
+import { attestPortfolio } from "./portfolio/attestor";
+import { bridgePortfolioShares } from "./portfolio/bridger";
+
+// ---------------------------------------------------------------------------
+// CLI arg helpers
+// ---------------------------------------------------------------------------
+
+function getArg(name: string): string | null {
+  const eq = process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
+  if (eq !== undefined) return eq;
+  const idx = process.argv.indexOf(`--${name}`);
+  if (idx !== -1 && idx + 1 < process.argv.length) return process.argv[idx + 1];
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Rating pipeline (existing)
+// ---------------------------------------------------------------------------
 
 async function reviewAsset(
   asset: AssetReadResult,
@@ -79,7 +105,7 @@ async function reviewAsset(
   return report;
 }
 
-async function main() {
+async function runRatingPipeline() {
   const provider = new ethers.JsonRpcProvider(config.privacyNodeRpc);
   const wallet = new ethers.Wallet(config.agentPrivateKey, provider);
 
@@ -100,8 +126,7 @@ async function main() {
   console.log("Agent address verified against ComplianceStore ✓");
 
   // Parse CLI args
-  const assetArg = process.argv.find((a) => a.startsWith("--asset="))?.split("=")[1]
-    || (process.argv.includes("--asset") ? process.argv[process.argv.indexOf("--asset") + 1] : null);
+  const assetArg = getArg("asset");
 
   // Read assets
   const assets: AssetReadResult[] = [];
@@ -152,6 +177,129 @@ async function main() {
     );
   }
   console.log(`\nProcessed ${reports.length} asset(s).`);
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio pipeline (Phase 7)
+// ---------------------------------------------------------------------------
+
+async function runPortfolioPipeline(constraintsJson: string) {
+  const provider = new ethers.JsonRpcProvider(config.privacyNodeRpc);
+
+  // Use deployer wallet — holds all minted tokens and is vault owner
+  if (!config.deployerPrivateKey) {
+    console.error("DEPLOYER_PRIVATE_KEY is required for portfolio mode (deployer holds the bond tokens)");
+    process.exit(1);
+  }
+  const wallet = new ethers.Wallet(config.deployerPrivateKey, provider);
+
+  console.log("=== Fideza AI Portfolio Construction Agent ===");
+  console.log(`Constructor address: ${wallet.address}`);
+
+  // 1. PARSE
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[PARSE] Parsing user constraints...");
+  console.log("=".repeat(60));
+  const constraints = parseConstraints(constraintsJson);
+  validateConstraints(constraints);
+  console.log(`  Rating range: ${constraints.maxRating ?? "AAA"} to ${constraints.minRating}`);
+  console.log(`  Target yield: ${constraints.targetYieldBps} bps`);
+  console.log(`  Min bonds: ${constraints.minBonds}`);
+  console.log(`  Max single exposure: ${constraints.maxSingleExposurePct}%`);
+  console.log(`  Maturity: ${constraints.maturityPreference ?? "mixed"}`);
+  console.log(`  Currency: ${constraints.currencyPreference ?? "any"}`);
+  console.log(`  Risk tolerance: ${constraints.riskTolerance ?? "moderate"}`);
+
+  // 2. SCAN
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[SCAN] Reading available bonds from registry...");
+  console.log("=".repeat(60));
+  const bonds = await scanAvailableBonds(provider, constraints);
+  for (const b of bonds) {
+    console.log(
+      `  ${b.assetId.slice(0, 10)}... | ${b.assetType.padEnd(11)} | ${b.rating.padEnd(4)} | ${String(b.couponRateBps).padStart(4)} bps | ${b.maturityBucket.padEnd(10)} | ${b.currency} | ${b.issuerCategory.slice(0, 30)}`,
+    );
+  }
+
+  // 3. OPTIMIZE
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[OPTIMIZE] Building portfolio allocation...");
+  console.log("=".repeat(60));
+  const portfolio = await optimizePortfolio(bonds, constraints);
+  console.log(`  Method: ${portfolio.method}`);
+  console.log(`  Bonds selected: ${portfolio.allocations.length}`);
+  console.log(`  Weighted coupon: ${portfolio.weightedCouponBps} bps`);
+  console.log(`  Weighted risk: ${portfolio.weightedRiskScore}`);
+  console.log(`  Diversification score: ${portfolio.diversificationScore}/10`);
+  console.log(`  Total weight: ${portfolio.totalWeightBps} bps`);
+  console.log("\n  Allocations:");
+  for (const a of portfolio.allocations) {
+    console.log(
+      `    ${a.assetId.slice(0, 10)}... | ${(a.weightBps / 100).toFixed(1)}% | ${a.rating.padEnd(4)} | ${a.assetType.padEnd(11)} | ${a.rationale?.slice(0, 40) ?? ""}`,
+    );
+  }
+
+  // 4. CONSTRUCT
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[CONSTRUCT] Creating portfolio on-chain...");
+  console.log("=".repeat(60));
+  const { portfolioId, shareTokenAddress, txHash } = await constructPortfolio(
+    portfolio,
+    wallet,
+  );
+
+  // 5. ATTEST
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[ATTEST] Signing portfolio attestation...");
+  console.log("=".repeat(60));
+  const attestation = await attestPortfolio(portfolio, portfolioId, bonds, wallet);
+
+  // 6. BRIDGE (stub)
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[BRIDGE] Preparing for cross-chain bridge...");
+  console.log("=".repeat(60));
+  await bridgePortfolioShares(shareTokenAddress, attestation, wallet);
+
+  // Summary
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("PORTFOLIO CONSTRUCTION COMPLETE");
+  console.log("=".repeat(60));
+  console.log(`  Portfolio ID:       ${portfolioId}`);
+  console.log(`  Share Token:        ${shareTokenAddress}`);
+  console.log(`  Create TX:          ${txHash}`);
+  console.log(`  Bonds:              ${attestation.numBonds}`);
+  console.log(`  Diversification:    ${attestation.diversificationScore}/10`);
+  console.log(`  Weighted Yield:     ${attestation.weightedCouponBps} bps`);
+  console.log(`  Rating Range:       ${attestation.ratingRange}`);
+  console.log(`  Avg Maturity:       ${attestation.avgMaturityMonths} months`);
+  console.log(`  Max Exposure:       ${attestation.maxSingleExposurePct}%`);
+  console.log(`  Methodology Hash:   ${attestation.methodologyHash}`);
+  console.log(`  Attestation Signed: ${attestation.signature.slice(0, 20)}...`);
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function main() {
+  const mode = getArg("mode") ?? "rate";
+
+  if (mode === "portfolio") {
+    const constraintsJson = getArg("constraints");
+    if (!constraintsJson) {
+      console.error("--constraints is required for portfolio mode");
+      console.error(
+        'Example: --constraints \'{"minRating":"BB-","maxRating":"AA","targetYieldBps":400,"maxSingleExposurePct":15,"minBonds":10,"maturityPreference":"mixed","currencyPreference":"any","riskTolerance":"moderate"}\'',
+      );
+      process.exit(1);
+    }
+    await runPortfolioPipeline(constraintsJson);
+  } else if (mode === "rate") {
+    await runRatingPipeline();
+  } else {
+    console.error(`Unknown mode: ${mode}. Use: rate, portfolio`);
+    process.exit(1);
+  }
 }
 
 main().catch((e) => {
