@@ -5,6 +5,8 @@ import { WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { raylsPublicChain } from "@/lib/chain";
 import { config } from "@/lib/wagmi";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient();
 
@@ -20,10 +22,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
             createOnLogin: "users-without-wallets",
           },
         },
+        appearance: {
+          theme: "dark",
+          accentColor: "#b49aff",
+        },
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={config}>{children}</WagmiProvider>
+        <WagmiProvider config={config}>
+          <TooltipProvider>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
   );
