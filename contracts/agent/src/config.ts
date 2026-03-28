@@ -42,6 +42,11 @@ export const config = {
   bondTokenAddress: req("BOND_TOKEN_ADDRESS"),
   absTokenAddress: req("ABS_TOKEN_ADDRESS"),
 
+  // Phase 6 contracts (Privacy Node)
+  bondPropertyRegistryAddress: opt("BOND_PROPERTY_REGISTRY_ADDRESS", "0x"),
+  portfolioVaultAddress: opt("PORTFOLIO_VAULT_ADDRESS", "0x"),
+  vaultShareTokenAddress: opt("VAULT_SHARE_TOKEN_ADDRESS", "0x"),
+
   // AI provider settings
   aiProvider: (opt("AI_PROVIDER", "openrouter")) as
     | "anthropic"
@@ -62,4 +67,7 @@ export const abis = {
   absToken: loadABI("ABSToken"),
   complianceStore: loadABI("ComplianceStore"),
   institutionRegistry: loadABI("InstitutionRegistry"),
+  bondPropertyRegistry: loadABI("BondPropertyRegistry"),
+  portfolioVault: loadABI("PortfolioVault"),
+  vaultShareToken: loadABI("VaultShareToken"),
 };
