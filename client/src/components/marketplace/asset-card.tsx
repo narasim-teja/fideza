@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { Hex } from "viem";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useReceipt } from "@/hooks/use-contracts";
 import { AssetTypeBadge } from "./asset-type-badge";
 import { RiskBadge } from "./risk-badge";
 import { LoadingCard } from "./loading-card";
@@ -32,11 +31,22 @@ const FIELD_LABELS: Record<string, string> = {
   delinquencyRateBucket: "Delinquency",
 };
 
-export function AssetCard({ assetId }: { assetId: Hex }) {
-  const { data: receipt, isLoading } = useReceipt(assetId);
+interface ReceiptData {
+  assetType: string;
+  disclosureJSON: string;
+  maturityTimestamp: bigint;
+  principalValue: bigint;
+  expectedYieldValue: bigint;
+}
 
-  if (isLoading) return <LoadingCard />;
-  if (!receipt) return null;
+export function AssetCard({
+  assetId,
+  receipt,
+}: {
+  assetId: Hex;
+  receipt?: ReceiptData;
+}) {
+  if (!receipt) return <LoadingCard />;
 
   const disclosure = parseDisclosure(receipt.disclosureJSON);
   const assetType = receipt.assetType;

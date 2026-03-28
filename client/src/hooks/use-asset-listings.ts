@@ -32,7 +32,7 @@ export function useAssetListings(assetId?: Hex) {
       if (assetId && metadata.assetId !== assetId) return null;
       return { listingId: id, ...listing, ...metadata };
     })
-    .filter(Boolean);
+    .filter((x): x is NonNullable<typeof x> => x != null);
 
   return {
     listings,

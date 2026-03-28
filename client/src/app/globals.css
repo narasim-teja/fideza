@@ -130,4 +130,10 @@
   html {
     @apply font-sans;
   }
+  button,
+  [role="menuitem"],
+  [data-slot="tabs-trigger"],
+  a[href] {
+    cursor: pointer;
+  }
 }

@@ -5,7 +5,7 @@ import { raylsPublicChain } from "./chain";
 export const config = createConfig({
   chains: [raylsPublicChain],
   transports: {
-    [raylsPublicChain.id]: http("https://testnet-rpc.rayls.com/"),
+    [raylsPublicChain.id]: http("/rpc"),
   },
 });
 

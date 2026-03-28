@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Copy, LogOut, Wallet, CircleDot } from "lucide-react";
 import { truncateAddress, formatWei } from "@/lib/format";
@@ -60,15 +59,15 @@ export function WalletButton() {
           </DropdownMenuItem>
         )}
         {balance && (
-          <DropdownMenuLabel className="text-xs font-normal flex items-center gap-2 px-1.5 py-1">
+          <div className="flex items-center gap-2 px-1.5 py-1 text-xs text-muted-foreground">
             <Wallet className="size-3.5" />
             {formatWei(balance.value)} {balance.symbol}
-          </DropdownMenuLabel>
+          </div>
         )}
-        <DropdownMenuLabel className="text-xs font-normal flex items-center gap-2 px-1.5 py-1">
+        <div className="flex items-center gap-2 px-1.5 py-1 text-xs text-muted-foreground">
           <CircleDot className="size-3.5 text-fideza-lime" />
           Rayls Testnet
-        </DropdownMenuLabel>
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={logout}
