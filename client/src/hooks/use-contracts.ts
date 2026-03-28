@@ -4,10 +4,14 @@ import { useReadContract, useWriteContract } from "wagmi";
 import type { Address, Hex } from "viem";
 import {
   CONTRACTS,
+  VAULT_CONTRACTS,
   receiptTokenFactoryAbi,
   ptytSplitterAbi,
   marketplaceAbi,
   erc20Abi,
+  bondCatalogAbi,
+  portfolioAttestationAbi,
+  lendingPoolAbi,
 } from "@/lib/contracts";
 
 // ---------------------------------------------------------------------------
@@ -236,5 +240,176 @@ export function useMarketplaceDelist() {
       writeContract({ abi: marketplaceAbi, address: CONTRACTS.marketplace, functionName: "delist", args: [listingId] }),
     delistAsync: (listingId: bigint) =>
       writeContractAsync({ abi: marketplaceAbi, address: CONTRACTS.marketplace, functionName: "delist", args: [listingId] }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// BondCatalog reads (Phase 8)
+// ---------------------------------------------------------------------------
+
+export function useBondCatalog() {
+  return useReadContract({
+    abi: bondCatalogAbi,
+    address: VAULT_CONTRACTS.bondCatalog,
+    functionName: "getAllBonds",
+  });
+}
+
+export function useBondCatalogCount() {
+  return useReadContract({
+    abi: bondCatalogAbi,
+    address: VAULT_CONTRACTS.bondCatalog,
+    functionName: "getBondCount",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// PortfolioAttestation reads (Phase 8)
+// ---------------------------------------------------------------------------
+
+export function usePortfolioAttestation(portfolioId: Hex | undefined) {
+  return useReadContract({
+    abi: portfolioAttestationAbi,
+    address: VAULT_CONTRACTS.portfolioAttestation,
+    functionName: "getAttestation",
+    args: portfolioId ? [portfolioId] : undefined,
+    query: { enabled: !!portfolioId },
+  });
+}
+
+export function useHasValidAttestation(portfolioId: Hex | undefined) {
+  return useReadContract({
+    abi: portfolioAttestationAbi,
+    address: VAULT_CONTRACTS.portfolioAttestation,
+    functionName: "hasValidAttestation",
+    args: portfolioId ? [portfolioId] : undefined,
+    query: { enabled: !!portfolioId },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// FidezaLendingPool reads (Phase 8)
+// ---------------------------------------------------------------------------
+
+export function useLendingPoolStats() {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "getPoolStats",
+  });
+}
+
+export function useLenderBalance(account: Address | undefined) {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "lenderBalances",
+    args: account ? [account] : undefined,
+    query: { enabled: !!account },
+  });
+}
+
+export function useLoan(loanId: bigint | undefined) {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "loans",
+    args: loanId !== undefined ? [loanId] : undefined,
+    query: { enabled: loanId !== undefined },
+  });
+}
+
+export function useLoanDebt(loanId: bigint | undefined) {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "getDebt",
+    args: loanId !== undefined ? [loanId] : undefined,
+    query: { enabled: loanId !== undefined },
+  });
+}
+
+export function useCollateralRatio(loanId: bigint | undefined) {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "getCollateralRatio",
+    args: loanId !== undefined ? [loanId] : undefined,
+    query: { enabled: loanId !== undefined },
+  });
+}
+
+export function useNextLoanId() {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "nextLoanId",
+  });
+}
+
+export function useAvailableLiquidity() {
+  return useReadContract({
+    abi: lendingPoolAbi,
+    address: VAULT_CONTRACTS.lendingPool,
+    functionName: "getAvailableLiquidity",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// FidezaLendingPool writes (Phase 8)
+// ---------------------------------------------------------------------------
+
+export function useDeposit() {
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+  return {
+    ...rest,
+    deposit: (amount: bigint) =>
+      writeContract({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "deposit", value: amount }),
+    depositAsync: (amount: bigint) =>
+      writeContractAsync({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "deposit", value: amount }),
+  };
+}
+
+export function useWithdraw() {
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+  return {
+    ...rest,
+    withdraw: (amount: bigint) =>
+      writeContract({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "withdraw", args: [amount] }),
+    withdrawAsync: (amount: bigint) =>
+      writeContractAsync({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "withdraw", args: [amount] }),
+  };
+}
+
+export function useBorrow() {
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+  return {
+    ...rest,
+    borrow: (collateralToken: Address, portfolioId: Hex, collateralAmount: bigint, borrowAmount: bigint) =>
+      writeContract({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "borrow", args: [collateralToken, portfolioId, collateralAmount, borrowAmount] }),
+    borrowAsync: (collateralToken: Address, portfolioId: Hex, collateralAmount: bigint, borrowAmount: bigint) =>
+      writeContractAsync({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "borrow", args: [collateralToken, portfolioId, collateralAmount, borrowAmount] }),
+  };
+}
+
+export function useRepay() {
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+  return {
+    ...rest,
+    repay: (loanId: bigint, amount: bigint) =>
+      writeContract({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "repay", args: [loanId], value: amount }),
+    repayAsync: (loanId: bigint, amount: bigint) =>
+      writeContractAsync({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "repay", args: [loanId], value: amount }),
+  };
+}
+
+export function useLiquidate() {
+  const { writeContract, writeContractAsync, ...rest } = useWriteContract();
+  return {
+    ...rest,
+    liquidate: (loanId: bigint, amount: bigint) =>
+      writeContract({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "liquidate", args: [loanId], value: amount }),
+    liquidateAsync: (loanId: bigint, amount: bigint) =>
+      writeContractAsync({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "liquidate", args: [loanId], value: amount }),
   };
 }

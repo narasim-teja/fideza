@@ -62,3 +62,24 @@ export function timeToMaturity(ts: number | bigint): string {
   const hours = Math.floor(diff / (1000 * 60 * 60));
   return `${hours}h remaining`;
 }
+
+export function formatBps(bps: number | bigint): string {
+  const n = typeof bps === "bigint" ? Number(bps) : bps;
+  return `${(n / 100).toFixed(2)}%`;
+}
+
+export function formatCollateralRatio(bps: number | bigint): string {
+  const n = typeof bps === "bigint" ? Number(bps) : bps;
+  return `${(n / 100).toFixed(0)}%`;
+}
+
+export function collateralRatioStatus(bps: number | bigint): "healthy" | "warning" | "danger" {
+  const n = typeof bps === "bigint" ? Number(bps) : bps;
+  if (n >= 15000) return "healthy";
+  if (n >= 12000) return "warning";
+  return "danger";
+}
+
+export function formatDiversification(score: number): string {
+  return `${score}/10`;
+}

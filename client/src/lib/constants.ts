@@ -70,3 +70,28 @@ export const DISCLOSURE_FIELD_LABELS: Record<string, string> = {
   governanceApprovalTx: "Governance Approval",
   agentSignature: "Agent Signature",
 };
+
+// ---------------------------------------------------------------------------
+// Rating colors
+// ---------------------------------------------------------------------------
+
+export function ratingColor(rating: string): { bg: string; text: string; border: string } {
+  const r = rating.replace(/[+-]/g, "");
+  if (["AAA", "AA", "A"].includes(r)) {
+    return { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/20" };
+  }
+  if (r === "BBB") {
+    return { bg: "bg-yellow-500/15", text: "text-yellow-400", border: "border-yellow-500/20" };
+  }
+  // BB, B, CCC
+  return { bg: "bg-red-500/15", text: "text-red-400", border: "border-red-500/20" };
+}
+
+export const LENDING_CONSTANTS = {
+  interestRateBps: 1000,
+  collateralRatioBps: 15000,
+  liquidationThresholdBps: 12000,
+  liquidationPenaltyBps: 500,
+} as const;
+
+export const PRIVACY_NODE_EXPLORER = "https://blockscout-privacy-node-1.rayls.com";

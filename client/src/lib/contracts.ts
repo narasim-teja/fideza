@@ -31,6 +31,25 @@ export const YT_TOKENS = {
 export type AssetKey = "invoice" | "bond" | "abs";
 
 // ---------------------------------------------------------------------------
+// Phase 8 — Vault + Lending contracts (Rayls Public Chain)
+// ---------------------------------------------------------------------------
+
+export const VAULT_CONTRACTS = {
+  bondCatalog: "0x66C3E620A0Af2D7C8c4C5e738E55bBc65A41d645" as Address,
+  portfolioAttestation: "0x3623df17d04Bf3EC7BD926fDED9426B5F5E4B6a7" as Address,
+  aiAttestationVerifier: "0x32fCfA8A57c09c1719cfdb9FcCc595a9a7D43f94" as Address,
+  lendingPool: "0xB3311DC5b23F704D3E36aD211A58D674269E77fB" as Address,
+} as const;
+
+/** Known vault share tokens on public chain (mirror tokens after bridge) */
+export const VAULT_SHARE_TOKENS = [
+  {
+    address: "0x200Df3Ad400ed1Bd35d6805C1E48d8Bf9eaFD4dA" as Address,
+    label: "AI Portfolio — Phase 8",
+  },
+] as const;
+
+// ---------------------------------------------------------------------------
 // ABIs (inlined as const for wagmi type inference)
 // ---------------------------------------------------------------------------
 
@@ -90,4 +109,54 @@ export const erc20Abi = [
   { type: "function", name: "transferFrom", inputs: [{ name: "from", type: "address" }, { name: "to", type: "address" }, { name: "value", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable" },
   { type: "event", name: "Approval", inputs: [{ name: "owner", type: "address", indexed: true }, { name: "spender", type: "address", indexed: true }, { name: "value", type: "uint256", indexed: false }] },
   { type: "event", name: "Transfer", inputs: [{ name: "from", type: "address", indexed: true }, { name: "to", type: "address", indexed: true }, { name: "value", type: "uint256", indexed: false }] },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Phase 8 ABIs
+// ---------------------------------------------------------------------------
+
+export const bondCatalogAbi = [
+  { type: "function", name: "getAllBonds", inputs: [], outputs: [{ name: "", type: "tuple[]", components: [{ name: "assetId", type: "bytes32" }, { name: "assetType", type: "string" }, { name: "rating", type: "string" }, { name: "couponRange", type: "string" }, { name: "maturityBucket", type: "string" }, { name: "currency", type: "string" }, { name: "issuerCategory", type: "string" }, { name: "hasCollateral", type: "bool" }, { name: "riskScore", type: "uint8" }] }], stateMutability: "view" },
+  { type: "function", name: "getBond", inputs: [{ name: "assetId", type: "bytes32" }], outputs: [{ name: "", type: "tuple", components: [{ name: "assetId", type: "bytes32" }, { name: "assetType", type: "string" }, { name: "rating", type: "string" }, { name: "couponRange", type: "string" }, { name: "maturityBucket", type: "string" }, { name: "currency", type: "string" }, { name: "issuerCategory", type: "string" }, { name: "hasCollateral", type: "bool" }, { name: "riskScore", type: "uint8" }] }], stateMutability: "view" },
+  { type: "function", name: "getBondCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "event", name: "BondCatalogued", inputs: [{ name: "assetId", type: "bytes32", indexed: true }, { name: "assetType", type: "string", indexed: false }, { name: "rating", type: "string", indexed: false }] },
+] as const;
+
+export const portfolioAttestationAbi = [
+  { type: "function", name: "getAttestation", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "tuple", components: [{ name: "portfolioId", type: "bytes32" }, { name: "totalValue", type: "uint256" }, { name: "weightedCouponBps", type: "uint256" }, { name: "numBonds", type: "uint8" }, { name: "diversificationScore", type: "uint8" }, { name: "methodologyHash", type: "bytes32" }, { name: "agentSignature", type: "bytes" }, { name: "timestamp", type: "uint256" }] }], stateMutability: "view" },
+  { type: "function", name: "hasValidAttestation", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "getAttestedValue", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "event", name: "AttestationSubmitted", inputs: [{ name: "portfolioId", type: "bytes32", indexed: true }, { name: "totalValue", type: "uint256", indexed: false }, { name: "numBonds", type: "uint8", indexed: false }, { name: "diversificationScore", type: "uint8", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
+] as const;
+
+export const lendingPoolAbi = [
+  // Lender
+  { type: "function", name: "deposit", inputs: [], outputs: [], stateMutability: "payable" },
+  { type: "function", name: "withdraw", inputs: [{ name: "amount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "lenderBalances", inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  // Borrower
+  { type: "function", name: "borrow", inputs: [{ name: "collateralToken", type: "address" }, { name: "portfolioId", type: "bytes32" }, { name: "collateralAmount", type: "uint256" }, { name: "borrowAmount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "repay", inputs: [{ name: "loanId", type: "uint256" }], outputs: [], stateMutability: "payable" },
+  // Liquidation
+  { type: "function", name: "liquidate", inputs: [{ name: "loanId", type: "uint256" }], outputs: [], stateMutability: "payable" },
+  // Views
+  { type: "function", name: "getDebt", inputs: [{ name: "loanId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getCollateralRatio", inputs: [{ name: "loanId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getAvailableLiquidity", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getPoolStats", inputs: [], outputs: [{ name: "_totalDeposited", type: "uint256" }, { name: "_totalBorrowed", type: "uint256" }, { name: "_availableLiquidity", type: "uint256" }, { name: "_utilizationBps", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "loans", inputs: [{ name: "", type: "uint256" }], outputs: [{ name: "borrower", type: "address" }, { name: "collateralToken", type: "address" }, { name: "portfolioId", type: "bytes32" }, { name: "collateralAmount", type: "uint256" }, { name: "principal", type: "uint256" }, { name: "startTime", type: "uint256" }, { name: "active", type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "nextLoanId", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "totalDeposited", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "totalBorrowed", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  // Constants
+  { type: "function", name: "INTEREST_RATE_BPS", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "COLLATERAL_RATIO_BPS", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "LIQUIDATION_THRESHOLD_BPS", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "LIQUIDATION_PENALTY_BPS", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  // Events
+  { type: "event", name: "Deposited", inputs: [{ name: "lender", type: "address", indexed: true }, { name: "amount", type: "uint256", indexed: false }] },
+  { type: "event", name: "Withdrawn", inputs: [{ name: "lender", type: "address", indexed: true }, { name: "amount", type: "uint256", indexed: false }] },
+  { type: "event", name: "Borrowed", inputs: [{ name: "loanId", type: "uint256", indexed: true }, { name: "borrower", type: "address", indexed: true }, { name: "principal", type: "uint256", indexed: false }, { name: "portfolioId", type: "bytes32", indexed: false }] },
+  { type: "event", name: "Repaid", inputs: [{ name: "loanId", type: "uint256", indexed: true }, { name: "borrower", type: "address", indexed: true }, { name: "totalPaid", type: "uint256", indexed: false }] },
+  { type: "event", name: "Liquidated", inputs: [{ name: "loanId", type: "uint256", indexed: true }, { name: "liquidator", type: "address", indexed: true }, { name: "debtRepaid", type: "uint256", indexed: false }] },
 ] as const;
