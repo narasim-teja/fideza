@@ -277,6 +277,14 @@ export function usePortfolioAttestation(portfolioId: Hex | undefined) {
   });
 }
 
+export function useAllPortfolioIds() {
+  return useReadContract({
+    abi: portfolioAttestationAbi,
+    address: VAULT_CONTRACTS.portfolioAttestation,
+    functionName: "getAllPortfolioIds",
+  });
+}
+
 export function useHasValidAttestation(portfolioId: Hex | undefined) {
   return useReadContract({
     abi: portfolioAttestationAbi,

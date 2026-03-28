@@ -36,9 +36,9 @@ export type AssetKey = "invoice" | "bond" | "abs";
 
 export const VAULT_CONTRACTS = {
   bondCatalog: "0x66C3E620A0Af2D7C8c4C5e738E55bBc65A41d645" as Address,
-  portfolioAttestation: "0x3623df17d04Bf3EC7BD926fDED9426B5F5E4B6a7" as Address,
-  aiAttestationVerifier: "0x32fCfA8A57c09c1719cfdb9FcCc595a9a7D43f94" as Address,
-  lendingPool: "0xB3311DC5b23F704D3E36aD211A58D674269E77fB" as Address,
+  portfolioAttestation: "0xAc7E7F211594c1e25a88B0Ca8C2824a5d0315855" as Address,
+  aiAttestationVerifier: "0x6adF0665e7aFa93a9CF20749e7c6e09efd9cF6C4" as Address,
+  lendingPool: "0x36C508b13B5a9509eB0E8d9F173Ba886961bcFca" as Address,
 } as const;
 
 /** Known vault share tokens on public chain (mirror tokens after bridge) */
@@ -126,6 +126,8 @@ export const portfolioAttestationAbi = [
   { type: "function", name: "getAttestation", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "tuple", components: [{ name: "portfolioId", type: "bytes32" }, { name: "totalValue", type: "uint256" }, { name: "weightedCouponBps", type: "uint256" }, { name: "numBonds", type: "uint8" }, { name: "diversificationScore", type: "uint8" }, { name: "methodologyHash", type: "bytes32" }, { name: "agentSignature", type: "bytes" }, { name: "timestamp", type: "uint256" }] }], stateMutability: "view" },
   { type: "function", name: "hasValidAttestation", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
   { type: "function", name: "getAttestedValue", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getAllPortfolioIds", inputs: [], outputs: [{ name: "", type: "bytes32[]" }], stateMutability: "view" },
+  { type: "function", name: "getPortfolioCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "event", name: "AttestationSubmitted", inputs: [{ name: "portfolioId", type: "bytes32", indexed: true }, { name: "totalValue", type: "uint256", indexed: false }, { name: "numBonds", type: "uint8", indexed: false }, { name: "diversificationScore", type: "uint8", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
 ] as const;
 

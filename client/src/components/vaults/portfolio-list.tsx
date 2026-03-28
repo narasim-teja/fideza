@@ -1,46 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePublicClient } from "wagmi";
 import type { Hex } from "viem";
-import { VAULT_CONTRACTS, portfolioAttestationAbi } from "@/lib/contracts";
+import { useAllPortfolioIds } from "@/hooks/use-contracts";
 import { PortfolioCard } from "./portfolio-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
 export function PortfolioList() {
-  const publicClient = usePublicClient();
-  const [portfolioIds, setPortfolioIds] = useState<Hex[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useAllPortfolioIds();
+  const portfolioIds = (data ?? []) as Hex[];
 
-  useEffect(() => {
-    if (!publicClient) return;
-
-    async function fetchPortfolioIds() {
-      try {
-        const logs = await publicClient!.getContractEvents({
-          address: VAULT_CONTRACTS.portfolioAttestation,
-          abi: portfolioAttestationAbi,
-          eventName: "AttestationSubmitted",
-          fromBlock: BigInt(0),
-          toBlock: "latest",
-        });
-
-        const ids = logs.map((log) => (log.args as { portfolioId: Hex }).portfolioId);
-        // Deduplicate
-        setPortfolioIds([...new Set(ids)]);
-      } catch (e) {
-        console.error("Failed to fetch portfolio IDs:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPortfolioIds();
-  }, [publicClient]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 2 }).map((_, i) => (
@@ -58,7 +29,7 @@ export function PortfolioList() {
         ))}
 
         <Link href="/vaults/create">
-          <div className="h-full min-h-[14rem] rounded-xl border-2 border-dashed border-border hover:border-fideza-lavender/40 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-fideza-lavender transition-colors cursor-pointer">
+          <div className="h-full min-h-56 rounded-xl border-2 border-dashed border-border hover:border-fideza-lavender/40 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-fideza-lavender transition-colors cursor-pointer">
             <Plus className="size-8" />
             <span className="text-sm font-medium">Create Portfolio</span>
             <span className="text-xs">AI-constructed from rated bonds</span>

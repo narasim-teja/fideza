@@ -25,6 +25,7 @@ contract PortfolioAttestation is Ownable {
     }
 
     mapping(bytes32 => Attestation) private _attestations;
+    bytes32[] private _portfolioIds;
     address public agentAddress;
 
     event AttestationSubmitted(
@@ -85,6 +86,7 @@ contract PortfolioAttestation is Ownable {
             agentSignature: agentSignature,
             timestamp: block.timestamp
         });
+        _portfolioIds.push(portfolioId);
 
         emit AttestationSubmitted(portfolioId, totalValue, numBonds, diversificationScore, block.timestamp);
     }
@@ -103,6 +105,16 @@ contract PortfolioAttestation is Ownable {
     /// @notice Get the attested total value for a portfolio.
     function getAttestedValue(bytes32 portfolioId) external view returns (uint256) {
         return _attestations[portfolioId].totalValue;
+    }
+
+    /// @notice Get all portfolio IDs that have been attested.
+    function getAllPortfolioIds() external view returns (bytes32[] memory) {
+        return _portfolioIds;
+    }
+
+    /// @notice Get the number of attested portfolios.
+    function getPortfolioCount() external view returns (uint256) {
+        return _portfolioIds.length;
     }
 
     /// @notice Update the authorized agent address.
