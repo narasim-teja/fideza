@@ -1,0 +1,15 @@
+# Compiler output
+out/
+cache/
+broadcast/
+
+# Environment
+.env
+
+# Dependencies
+node_modules/
+lib/
+package-lock.json
+
+# OS
+.DS_Store

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+contracts/node_modules/
+contracts/agent/node_modules/
+client/node_modules/
+
+# Environment
+.env
+contracts/.env
+contracts/agent/.env
+client/.env.local
+
+# Build artifacts
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+client/.next/
+client/out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.log
+docs/
