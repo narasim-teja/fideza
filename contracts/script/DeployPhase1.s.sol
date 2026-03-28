@@ -56,11 +56,10 @@ contract DeployPhase1 is Script {
         DisclosureGate gate = new DisclosureGate(address(compStore), deployerAddr);
         console.log("  DisclosureGate:     ", address(gate));
 
-        // 4. InvoiceToken (ERC-721)
+        // 4. InvoiceToken (ERC-20, one per invoice)
         InvoiceToken invoice = new InvoiceToken(
-            "https://fideza.io/metadata/invoices/",
-            "Fideza Invoice Token",
-            "FINV",
+            "Fideza Invoice - INV-2026-00847",
+            "FINV-847",
             endpoint,
             rnEndpoint,
             userGovernance,

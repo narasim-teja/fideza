@@ -39,9 +39,9 @@ contract MintSampleAssets is Script {
         instReg.updateStatus(deployerAddr, InstitutionRegistry.InstitutionStatus.APPROVED);
         console.log("  Institution registered and approved");
 
-        // === 2. Mint Invoice (INV-2026-00847) ===
-        console.log("=== Minting Invoice ===");
-        uint256 tokenId = invoiceToken.mintInvoice(
+        // === 2. Initialize Invoice (INV-2026-00847) ===
+        console.log("=== Initializing Invoice ===");
+        invoiceToken.initializeInvoice(
             InvoiceToken.InvoiceMetadata({
                 invoiceId: "INV-2026-00847",
                 issuer: deployerAddr,
@@ -58,9 +58,10 @@ contract MintSampleAssets is Script {
                 priorityClaim: false,
                 invoiceDocHash: keccak256("invoice-pdf-INV-2026-00847"),
                 previouslyTokenized: false
-            })
+            }),
+            25_000_000 * 10 ** 18 // 25M units (1 unit = R$1 face value)
         );
-        console.log("  Invoice minted, tokenId:", tokenId);
+        console.log("  Invoice initialized, 25M units minted");
 
         // === 3. Initialize Bond (BOND-2026-ENERGY-A1) ===
         console.log("=== Initializing Bond ===");
@@ -134,7 +135,7 @@ contract MintSampleAssets is Script {
 
         console.log("");
         console.log("=== Sample Assets Minted ===");
-        console.log("  Invoice tokenId: 1 (INV-2026-00847)");
+        console.log("  Invoice: 25,000,000 units (INV-2026-00847)");
         console.log("  Bond: 10,000 units (BOND-2026-ENERGY-A1)");
         console.log("  ABS: 14,800 units (ABS-2026-AUTO-001)");
     }

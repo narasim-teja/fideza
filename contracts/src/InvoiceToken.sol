@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {RaylsErc721Handler} from "rayls-protocol-sdk/tokens/RaylsErc721Handler.sol";
+import {RaylsErc20Handler} from "rayls-protocol-sdk/tokens/RaylsErc20Handler.sol";
 import {InstitutionRegistry} from "./InstitutionRegistry.sol";
 
 /// @title InvoiceToken
-/// @notice ERC-721 for unique trade receivable invoices. Each tokenId = one invoice.
+/// @notice ERC-20 for a single trade receivable invoice. One contract per invoice.
 ///         Full metadata stays on Privacy Node; getDisclosure() returns bucketed/redacted fields.
-contract InvoiceToken is RaylsErc721Handler {
+///         Supply represents fractional shares of the invoice's face value.
+contract InvoiceToken is RaylsErc20Handler {
     struct InvoiceMetadata {
         string invoiceId;
         address issuer;
@@ -39,13 +40,12 @@ contract InvoiceToken is RaylsErc721Handler {
     }
 
     InstitutionRegistry public immutable institutionRegistry;
-    uint256 public nextTokenId = 1;
-    mapping(uint256 => InvoiceMetadata) private _metadata;
+    InvoiceMetadata private _metadata;
+    bool public initialized;
 
-    event InvoiceMinted(uint256 indexed tokenId, string invoiceId, address indexed issuer);
+    event InvoiceInitialized(string invoiceId, address indexed issuer, string currency, uint256 totalSupply);
 
     constructor(
-        string memory _uri,
         string memory _name,
         string memory _symbol,
         address _endpoint,
@@ -53,8 +53,7 @@ contract InvoiceToken is RaylsErc721Handler {
         address _userGovernance,
         address _institutionRegistry
     )
-        RaylsErc721Handler(
-            _uri,
+        RaylsErc20Handler(
             _name,
             _symbol,
             _endpoint,
@@ -67,14 +66,18 @@ contract InvoiceToken is RaylsErc721Handler {
         institutionRegistry = InstitutionRegistry(_institutionRegistry);
     }
 
-    function mintInvoice(InvoiceMetadata calldata metadata) external returns (uint256) {
+    function decimals() public pure override returns (uint8) {
+        return 18;
+    }
+
+    function initializeInvoice(InvoiceMetadata calldata metadata, uint256 totalSupply) external {
+        require(!initialized, "Already initialized");
         require(institutionRegistry.isApproved(msg.sender), "Not approved institution");
         require(bytes(metadata.invoiceId).length > 0, "Invoice ID required");
+        require(totalSupply > 0, "Supply must be > 0");
 
-        uint256 tokenId = nextTokenId++;
-        _safeMint(msg.sender, tokenId);
-
-        _metadata[tokenId] = InvoiceMetadata({
+        initialized = true;
+        _metadata = InvoiceMetadata({
             invoiceId: metadata.invoiceId,
             issuer: msg.sender,
             debtorName: metadata.debtorName,
@@ -92,18 +95,18 @@ contract InvoiceToken is RaylsErc721Handler {
             previouslyTokenized: metadata.previouslyTokenized
         });
 
-        emit InvoiceMinted(tokenId, metadata.invoiceId, msg.sender);
-        return tokenId;
+        _mint(msg.sender, totalSupply);
+        emit InvoiceInitialized(metadata.invoiceId, msg.sender, metadata.currency, totalSupply);
     }
 
-    function getFullMetadata(uint256 tokenId) external view returns (InvoiceMetadata memory) {
-        require(_metadata[tokenId].issueDate > 0, "Token does not exist");
-        return _metadata[tokenId];
+    function getFullMetadata() external view returns (InvoiceMetadata memory) {
+        require(initialized, "Not initialized");
+        return _metadata;
     }
 
-    function getDisclosure(uint256 tokenId) external view returns (InvoiceDisclosure memory) {
-        InvoiceMetadata storage m = _metadata[tokenId];
-        require(m.issueDate > 0, "Token does not exist");
+    function getDisclosure() external view returns (InvoiceDisclosure memory) {
+        require(initialized, "Not initialized");
+        InvoiceMetadata storage m = _metadata;
 
         return InvoiceDisclosure({
             assetType: "INVOICE",
@@ -118,9 +121,9 @@ contract InvoiceToken is RaylsErc721Handler {
         });
     }
 
-    function getAssetId(uint256 tokenId) external view returns (bytes32) {
-        require(_metadata[tokenId].issueDate > 0, "Token does not exist");
-        return keccak256(bytes(_metadata[tokenId].invoiceId));
+    function getAssetId() external view returns (bytes32) {
+        require(initialized, "Not initialized");
+        return keccak256(bytes(_metadata.invoiceId));
     }
 
     // --- Disclosure bucketing helpers ---
