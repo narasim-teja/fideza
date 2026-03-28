@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useAccount, usePublicClient } from "wagmi";
+import { parseEther } from "viem";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { explorerTxUrl } from "@/lib/constants";
 import { formatBps, formatDiversification, truncateAddress } from "@/lib/format";
+import { useDeposit } from "@/hooks/use-contracts";
+import { toast } from "sonner";
 import {
   Brain,
   Loader2,
@@ -25,13 +29,14 @@ const RATING_OPTIONS = [
   "B+", "B", "B-", "CCC",
 ];
 
-const PIPELINE_STAGES = ["PARSE", "SCAN", "OPTIMIZE", "CONSTRUCT", "ATTEST", "BRIDGE"] as const;
+const PIPELINE_STAGES = ["SIGN", "PARSE", "SCAN", "OPTIMIZE", "CONSTRUCT", "ATTEST", "BRIDGE"] as const;
 
 interface PortfolioResult {
   portfolioId: string;
   shareTokenAddress: string;
   attestationTxHash: string;
   bridgeTxHash: string;
+  transferToUserTxHash?: string;
   numBonds: number;
   diversificationScore: number;
   weightedCouponBps: number;
@@ -42,6 +47,7 @@ interface PortfolioResult {
 }
 
 export default function CreatePortfolioPage() {
+  const { address } = useAccount();
   const [minRating, setMinRating] = useState("BB-");
   const [maxRating, setMaxRating] = useState("AA");
   const [targetYieldBps, setTargetYieldBps] = useState(400);
@@ -51,16 +57,23 @@ export default function CreatePortfolioPage() {
   const [currencyPreference, setCurrencyPreference] = useState("any");
   const [riskTolerance, setRiskTolerance] = useState("moderate");
 
+  const publicClient = usePublicClient();
+  const { depositAsync } = useDeposit();
+
   const [isRunning, setIsRunning] = useState(false);
   const [currentStage, setCurrentStage] = useState<number>(-1);
   const [result, setResult] = useState<PortfolioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [signatureTxHash, setSignatureTxHash] = useState<string | null>(null);
 
   async function handleConstruct() {
+    if (!address || !publicClient) return;
+
     setIsRunning(true);
     setError(null);
     setResult(null);
-    setCurrentStage(0);
+    setSignatureTxHash(null);
+    setCurrentStage(0); // SIGN stage
 
     const constraints = {
       minRating,
@@ -74,7 +87,16 @@ export default function CreatePortfolioPage() {
     };
 
     try {
-      // Simulate stage progression for UX
+      // Stage 0: SIGN — User signs an on-chain tx (deposit to lending pool as construction fee)
+      const toastId = toast.loading("Confirm transaction in wallet...");
+      const depositTx = await depositAsync(parseEther("0.001"));
+      toast.loading("Waiting for confirmation...", { id: toastId });
+      await publicClient.waitForTransactionReceipt({ hash: depositTx });
+      setSignatureTxHash(depositTx);
+      toast.success("Transaction confirmed — starting AI pipeline", { id: toastId });
+
+      // Stages 1-6: Agent pipeline
+      setCurrentStage(1); // PARSE
       const stageInterval = setInterval(() => {
         setCurrentStage((prev) => (prev < PIPELINE_STAGES.length - 1 ? prev + 1 : prev));
       }, 3000);
@@ -82,7 +104,7 @@ export default function CreatePortfolioPage() {
       const res = await fetch("http://localhost:3001/api/portfolio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ constraints }),
+        body: JSON.stringify({ constraints, recipientAddress: address }),
       });
 
       clearInterval(stageInterval);
@@ -234,10 +256,12 @@ export default function CreatePortfolioPage() {
 
             <Button
               onClick={handleConstruct}
-              disabled={isRunning}
+              disabled={isRunning || !address}
               className="w-full bg-fideza-lavender hover:bg-fideza-lavender/90 text-black font-semibold"
             >
-              {isRunning ? (
+              {!address ? (
+                "Connect Wallet First"
+              ) : isRunning ? (
                 <>
                   <Loader2 className="size-4 mr-2 animate-spin" />
                   Constructing Portfolio...
@@ -249,6 +273,11 @@ export default function CreatePortfolioPage() {
                 </>
               )}
             </Button>
+            {address && (
+              <p className="text-xs text-muted-foreground text-center">
+                Vault shares will be sent to {truncateAddress(address)}
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -353,7 +382,18 @@ export default function CreatePortfolioPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              {signatureTxHash && (
+                <a
+                  href={explorerTxUrl(signatureTxHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-foreground hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="size-3" />
+                  Construction Fee TX
+                </a>
+              )}
               {result.attestationTxHash && result.attestationTxHash !== "not-deployed" && (
                 <a
                   href={explorerTxUrl(result.attestationTxHash)}
@@ -363,6 +403,17 @@ export default function CreatePortfolioPage() {
                 >
                   <ExternalLink className="size-3" />
                   Attestation TX
+                </a>
+              )}
+              {result.transferToUserTxHash && (
+                <a
+                  href={explorerTxUrl(result.transferToUserTxHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-emerald-400 hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="size-3" />
+                  Shares Sent to Wallet
                 </a>
               )}
               <Badge variant="outline" className="text-xs">

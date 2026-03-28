@@ -258,7 +258,8 @@ async function runPortfolioPipeline(constraintsJson: string) {
   console.log(`\n${"=".repeat(60)}`);
   console.log("[BRIDGE] Submitting attestation + bridging shares...");
   console.log("=".repeat(60));
-  const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet);
+  const recipientAddress = getArg("recipient") ?? undefined;
+  const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet, recipientAddress);
 
   // Summary
   console.log(`\n${"=".repeat(60)}`);

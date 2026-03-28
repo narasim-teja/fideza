@@ -15,6 +15,7 @@ import type { PortfolioAttestation } from "../types";
 export interface BridgeResult {
   attestationTxHash: string;
   bridgeTxHash: string;
+  transferToUserTxHash?: string;
 }
 
 /**
@@ -23,11 +24,13 @@ export interface BridgeResult {
  * @param shareTokenAddress - VaultShareToken address on Privacy Node
  * @param attestation - Signed portfolio attestation from attestor.ts
  * @param privacyWallet - Wallet connected to Privacy Node (holds share tokens)
+ * @param recipientAddress - Optional user wallet address to receive shares on public chain
  */
 export async function bridgePortfolioShares(
   shareTokenAddress: string,
   attestation: PortfolioAttestation,
   privacyWallet: ethers.Wallet,
+  recipientAddress?: string,
 ): Promise<BridgeResult> {
   // -----------------------------------------------------------------------
   // 1. Submit attestation to PortfolioAttestation on public chain
@@ -124,9 +127,48 @@ export async function bridgePortfolioShares(
     console.log(`  Privacy Node explorer: https://blockscout-privacy-node-1.rayls.com/tx/${bridgeReceipt.hash}`);
     console.log("  Note: Mirror tokens will appear on public chain in ~30-60 seconds (relay)");
 
+    // -----------------------------------------------------------------------
+    // 3. Transfer shares to user's wallet on public chain (if recipient given)
+    // -----------------------------------------------------------------------
+    let transferToUserTxHash: string | undefined;
+    if (recipientAddress) {
+      console.log(`  Waiting for mirror token on public chain (polling ~60s)...`);
+      const registeredKey = process.env.REGISTERED_PRIVATE_KEY ?? config.deployerPrivateKey;
+      const registeredPublicWallet = new ethers.Wallet(registeredKey!, publicProvider);
+      const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function transfer(address,uint256) returns (bool)"];
+
+      // Poll for mirror token to arrive (relayer takes 30-60s)
+      let mirrorBalance = BigInt(0);
+      const mirrorToken = new ethers.Contract(shareTokenAddress, erc20Abi, registeredPublicWallet);
+      for (let attempt = 0; attempt < 20; attempt++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        try {
+          mirrorBalance = await mirrorToken.balanceOf(registeredPublicWallet.address);
+          if (mirrorBalance > BigInt(0)) {
+            console.log(`  Mirror token arrived: ${ethers.formatEther(mirrorBalance)} shares`);
+            break;
+          }
+        } catch {
+          // Mirror contract may not exist yet
+        }
+      }
+
+      if (mirrorBalance > BigInt(0)) {
+        console.log(`  Transferring shares to user: ${recipientAddress}`);
+        const transferTx = await mirrorToken.transfer(recipientAddress, mirrorBalance, { type: 0 });
+        const transferReceipt = await transferTx.wait();
+        transferToUserTxHash = transferReceipt.hash;
+        console.log(`  Transfer TX: ${transferReceipt.hash}`);
+        console.log(`  Explorer: https://testnet-explorer.rayls.com/tx/${transferReceipt.hash}`);
+      } else {
+        console.log("  Mirror token not yet available — user can claim later");
+      }
+    }
+
     return {
       attestationTxHash: attestReceipt.hash,
       bridgeTxHash: bridgeReceipt.hash,
+      transferToUserTxHash,
     };
   } catch (e: any) {
     console.log(`  Bridge teleport failed: ${e.message?.slice(0, 120)}`);

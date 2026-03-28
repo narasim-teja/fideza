@@ -18,7 +18,7 @@ import { bridgePortfolioShares } from "./portfolio/bridger";
 
 const PORT = Number(process.env.PORT ?? 3001);
 
-async function handlePortfolioRequest(constraintsJson: Record<string, unknown>) {
+async function handlePortfolioRequest(constraintsJson: Record<string, unknown>, recipientAddress?: string) {
   const provider = new ethers.JsonRpcProvider(config.privacyNodeRpc);
 
   if (!config.deployerPrivateKey) {
@@ -45,8 +45,8 @@ async function handlePortfolioRequest(constraintsJson: Record<string, unknown>) 
   // 5. ATTEST
   const attestation = await attestPortfolio(portfolio, portfolioId, bonds, wallet);
 
-  // 6. BRIDGE
-  const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet);
+  // 6. BRIDGE + transfer to user
+  const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet, recipientAddress);
 
   return {
     portfolioId,
@@ -54,6 +54,7 @@ async function handlePortfolioRequest(constraintsJson: Record<string, unknown>) 
     createTxHash: txHash,
     attestationTxHash: bridgeResult.attestationTxHash,
     bridgeTxHash: bridgeResult.bridgeTxHash,
+    transferToUserTxHash: bridgeResult.transferToUserTxHash,
     numBonds: attestation.numBonds,
     diversificationScore: attestation.diversificationScore,
     weightedCouponBps: attestation.weightedCouponBps,
@@ -82,7 +83,7 @@ const server = http.createServer(async (req, res) => {
     req.on("data", (chunk) => { body += chunk; });
     req.on("end", async () => {
       try {
-        const { constraints } = JSON.parse(body);
+        const { constraints, recipientAddress } = JSON.parse(body);
         if (!constraints) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Missing constraints" }));
@@ -91,8 +92,9 @@ const server = http.createServer(async (req, res) => {
 
         console.log("\n=== Portfolio API Request ===");
         console.log("Constraints:", JSON.stringify(constraints, null, 2));
+        if (recipientAddress) console.log("Recipient:", recipientAddress);
 
-        const result = await handlePortfolioRequest(constraints);
+        const result = await handlePortfolioRequest(constraints, recipientAddress);
 
         console.log("\n=== Portfolio API Response ===");
         console.log("Portfolio ID:", result.portfolioId);
