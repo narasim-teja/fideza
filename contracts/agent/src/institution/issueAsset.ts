@@ -186,13 +186,13 @@ export async function issueAsset(
   if (request.assetType === "bond") {
     const meta = {
       bondId: request.metadata.bondId ?? idValue,
-      isin: request.metadata.isin ?? "",
+      isin: request.metadata.isin ?? `XS${Date.now()}`,
       issuer: wallet.address,
       issuerName: request.metadata.issuerName ?? "",
       issuerJurisdiction: request.metadata.issuerJurisdiction ?? "BR",
       issuerSector: request.metadata.issuerSector ?? "Financial Services",
       issuerCreditRating: request.metadata.issuerCreditRating ?? "BBB",
-      parValue: ethers.parseEther(String(request.metadata.parValue ?? "1000")),
+      parValue: BigInt(Number(request.metadata.parValue ?? 1000)),
       currency: request.metadata.currency ?? "USD",
       couponRateBps: Number(request.metadata.couponRateBps ?? 500),
       couponFrequency: request.metadata.couponFrequency ?? "Semi-Annual",
@@ -283,8 +283,17 @@ export async function issueAsset(
   console.log(`    Rating: ${rating} (score: ${report.riskScore})`);
 
   // -----------------------------------------------------------------------
-  // 4. REGISTER — add to BondPropertyRegistry
+  // 4. REGISTER — add to BondPropertyRegistry (only if approved)
   // -----------------------------------------------------------------------
+  if (report.recommendation !== "APPROVE") {
+    console.log(`  [REGISTER] Skipped — asset ${report.recommendation} (not approved)`);
+    return {
+      tokenAddress, assetId: asset.assetId, deployTxHash, mintTxHash,
+      attestationTxHash: report.reportHash,
+      riskScore: report.riskScore, riskTier: report.riskTier, rating,
+      recommendation: report.recommendation, numChecks: report.checks.length,
+    };
+  }
   console.log("  [REGISTER] Adding to BondPropertyRegistry...");
 
   const registry = new ethers.Contract(
