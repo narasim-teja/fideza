@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BondCatalog } from "@/components/vaults/bond-catalog";
 import { PortfolioList } from "@/components/vaults/portfolio-list";
 import { cn } from "@/lib/utils";
@@ -11,8 +11,19 @@ const TABS = [
   { key: "portfolios", label: "My Portfolios", icon: Briefcase },
 ] as const;
 
+type TabKey = (typeof TABS)[number]["key"];
+
 export default function VaultsPage() {
-  const [tab, setTab] = useState<string>("catalog");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const raw = searchParams.get("tab");
+  const tab: TabKey = raw === "portfolios" ? "portfolios" : "catalog";
+
+  const setTab = (key: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", key);
+    router.replace(`?${params.toString()}`);
+  };
 
   return (
     <div className="space-y-6">

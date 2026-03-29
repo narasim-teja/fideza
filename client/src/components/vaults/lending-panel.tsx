@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useApproveToken, useBorrow, useTokenBalance, useTokenAllowance } from "@/hooks/use-contracts";
+import { useApproveToken, useBorrow, useTokenBalance, useTokenAllowance, useZKProofValid } from "@/hooks/use-contracts";
 import { VAULT_CONTRACTS } from "@/lib/contracts";
 import { formatWei, formatCollateralRatio, collateralRatioStatus } from "@/lib/format";
 import { LENDING_CONSTANTS } from "@/lib/constants";
@@ -13,7 +13,7 @@ import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther } from "viem";
 import type { Address, Hex } from "viem";
 import { toast } from "sonner";
-import { Landmark, Loader2 } from "lucide-react";
+import { Landmark, Loader2, ShieldAlert } from "lucide-react";
 
 export function LendingPanel({
   portfolioId,
@@ -31,6 +31,7 @@ export function LendingPanel({
 
   const { data: shareBalance } = useTokenBalance(vaultShareToken, address);
   const { data: allowance } = useTokenAllowance(vaultShareToken, address, VAULT_CONTRACTS.lendingPool);
+  const { data: hasZKProof } = useZKProofValid(portfolioId);
   const { approveAsync } = useApproveToken();
   const { borrowAsync } = useBorrow();
 
@@ -105,6 +106,18 @@ export function LendingPanel({
 
         <Separator />
 
+        {hasZKProof === false && (
+          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-2">
+            <ShieldAlert className="size-4 text-yellow-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-yellow-300">
+              <p className="font-medium">ZK Proof Required</p>
+              <p className="text-yellow-400/80 mt-0.5">
+                Generate a ZK composition proof above before borrowing. The lending pool verifies portfolio properties on-chain.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Collateral (Vault Shares)</label>
@@ -158,10 +171,12 @@ export function LendingPanel({
 
           <Button
             onClick={handleBorrow}
-            disabled={collateralAmount === BigInt(0) || borrowAmount === BigInt(0)}
+            disabled={collateralAmount === BigInt(0) || borrowAmount === BigInt(0) || hasZKProof === false}
             className="w-full"
           >
-            {collateralAmount === BigInt(0) || borrowAmount === BigInt(0) ? (
+            {hasZKProof === false ? (
+              "Generate ZK Proof First"
+            ) : collateralAmount === BigInt(0) || borrowAmount === BigInt(0) ? (
               "Enter amounts"
             ) : previewRatio < LENDING_CONSTANTS.collateralRatioBps ? (
               "Insufficient collateral ratio"
