@@ -13,6 +13,8 @@ import {
   portfolioAttestationAbi,
   lendingPoolAbi,
   zkPortfolioVerifierAbi,
+  zkConstraintVerifierAbi,
+  zkRatingVerifierAbi,
 } from "@/lib/contracts";
 
 // ---------------------------------------------------------------------------
@@ -452,5 +454,53 @@ export function useZKPortfolioCount() {
     abi: zkPortfolioVerifierAbi,
     address: VAULT_CONTRACTS.zkPortfolioVerifier,
     functionName: "getPortfolioCount",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ZKConstraintVerifier reads (Phase 12)
+// ---------------------------------------------------------------------------
+
+export function useZKConstraintProofValid(portfolioId: Hex | undefined) {
+  return useReadContract({
+    abi: zkConstraintVerifierAbi,
+    address: VAULT_CONTRACTS.zkConstraintVerifier,
+    functionName: "hasValidProof",
+    args: portfolioId ? [portfolioId] : undefined,
+    query: { enabled: !!portfolioId },
+  });
+}
+
+export function useZKVerifiedConstraints(portfolioId: Hex | undefined) {
+  return useReadContract({
+    abi: zkConstraintVerifierAbi,
+    address: VAULT_CONTRACTS.zkConstraintVerifier,
+    functionName: "getVerifiedConstraints",
+    args: portfolioId ? [portfolioId] : undefined,
+    query: { enabled: !!portfolioId },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ZKRatingVerifier reads (Phase 12)
+// ---------------------------------------------------------------------------
+
+export function useZKRatingProofValid(bondId: Hex | undefined) {
+  return useReadContract({
+    abi: zkRatingVerifierAbi,
+    address: VAULT_CONTRACTS.zkRatingVerifier,
+    functionName: "hasValidProof",
+    args: bondId ? [bondId] : undefined,
+    query: { enabled: !!bondId },
+  });
+}
+
+export function useZKVerifiedRating(bondId: Hex | undefined) {
+  return useReadContract({
+    abi: zkRatingVerifierAbi,
+    address: VAULT_CONTRACTS.zkRatingVerifier,
+    functionName: "getVerifiedRating",
+    args: bondId ? [bondId] : undefined,
+    query: { enabled: !!bondId },
   });
 }

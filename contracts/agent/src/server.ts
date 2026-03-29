@@ -22,6 +22,8 @@ import { constructPortfolio } from "./portfolio/vaultConstructor";
 import { attestPortfolio } from "./portfolio/attestor";
 import { bridgePortfolioShares } from "./portfolio/bridger";
 import { generateProof } from "./portfolio/zkProver";
+import { generateConstraintProof } from "./portfolio/zkConstraintProver";
+import { generateRatingProof } from "./portfolio/zkRatingProver";
 import {
   registerInstitution,
   getInstitutionStatus,
@@ -141,6 +143,40 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    // ----- POST /api/portfolio/verify-constraint -----
+    if (req.method === "POST" && url === "/api/portfolio/verify-constraint") {
+      const { portfolioId, constraints } = JSON.parse(await parseBody(req));
+      if (!portfolioId) return json(res, 400, { error: "Missing portfolioId" });
+
+      console.log(`\n=== ZK Constraint Proof Request ===`);
+      console.log(`  Portfolio: ${portfolioId}`);
+      const { proof, publicInputs, pub } = await generateConstraintProof(portfolioId, constraints);
+      console.log(`=== ZK Constraint Proof Generated ===\n`);
+      return json(res, 200, {
+        portfolioId,
+        proof: "0x" + Buffer.from(proof).toString("hex"),
+        publicInputs,
+        publicValues: pub,
+      });
+    }
+
+    // ----- POST /api/bond/verify-rating -----
+    if (req.method === "POST" && url === "/api/bond/verify-rating") {
+      const { assetId } = JSON.parse(await parseBody(req));
+      if (!assetId) return json(res, 400, { error: "Missing assetId" });
+
+      console.log(`\n=== ZK Rating Proof Request ===`);
+      console.log(`  Asset: ${assetId}`);
+      const { proof, publicInputs, published } = await generateRatingProof(assetId);
+      console.log(`=== ZK Rating Proof Generated ===\n`);
+      return json(res, 200, {
+        assetId,
+        proof: "0x" + Buffer.from(proof).toString("hex"),
+        publicInputs,
+        publishedValues: published,
+      });
+    }
+
     // ----- POST /api/issue -----
     if (req.method === "POST" && url === "/api/issue") {
       const { assetType, metadata, totalSupply } = JSON.parse(await parseBody(req));
@@ -211,6 +247,8 @@ server.listen(PORT, () => {
   console.log(`Fideza AI Agent API listening on http://localhost:${PORT}`);
   console.log("Endpoints:");
   console.log("  POST /api/portfolio              — AI portfolio construction");
+  console.log("  POST /api/portfolio/verify-constraint — ZK constraint compliance proof");
+  console.log("  POST /api/bond/verify-rating     — ZK bond rating integrity proof");
   console.log("  POST /api/issue                  — Agentic asset issuance");
   console.log("  POST /api/institution/register    — KYB registration");
   console.log("  GET  /api/institution/status      — Institution status");

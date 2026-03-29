@@ -42,6 +42,9 @@ export const VAULT_CONTRACTS = {
   lendingPoolLegacy: "0x36C508b13B5a9509eB0E8d9F173Ba886961bcFca" as Address, // AI-backed (Phase 8)
   // Phase 11: ZK Verifier
   zkPortfolioVerifier: "0x60A1c66c6C308Afb003769CD35fACF5f593B3dA4" as Address,
+  // Phase 12: ZK Constraint + Rating Verifiers
+  zkConstraintVerifier: "0x9f370d528F77E400E17F9d525A9E7970377DDAd9" as Address,
+  zkRatingVerifier: "0xA45Bc8b5848664Fd9AF73F42EdeD281B238958ad" as Address,
 } as const;
 
 /** Known vault share tokens on public chain (mirror tokens after bridge).
@@ -178,4 +181,26 @@ export const zkPortfolioVerifierAbi = [
   { type: "function", name: "verifyAndStore", inputs: [{ name: "portfolioId", type: "bytes32" }, { name: "proof", type: "bytes" }, { name: "publicInputs", type: "bytes32[]" }], outputs: [], stateMutability: "nonpayable" },
   { type: "function", name: "getPortfolioCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
   { type: "event", name: "PortfolioVerified", inputs: [{ name: "portfolioId", type: "bytes32", indexed: true }, { name: "totalValue", type: "uint256", indexed: false }, { name: "numBonds", type: "uint8", indexed: false }, { name: "diversificationScore", type: "uint8", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Phase 12 — ZK Constraint Verifier ABI
+// ---------------------------------------------------------------------------
+
+export const zkConstraintVerifierAbi = [
+  { type: "function", name: "hasValidProof", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "getVerifiedConstraints", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "tuple", components: [{ name: "constraintMinRating", type: "uint8" }, { name: "constraintMaxRating", type: "uint8" }, { name: "constraintMaxExposureBps", type: "uint256" }, { name: "constraintMinBonds", type: "uint8" }, { name: "constraintTargetYieldBps", type: "uint256" }, { name: "actualWeightedCouponBps", type: "uint256" }, { name: "actualNumBonds", type: "uint8" }, { name: "verifiedAt", type: "uint256" }] }], stateMutability: "view" },
+  { type: "function", name: "verifyAndStore", inputs: [{ name: "portfolioId", type: "bytes32" }, { name: "proof", type: "bytes" }, { name: "publicInputs", type: "bytes32[]" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "event", name: "ConstraintComplianceVerified", inputs: [{ name: "portfolioId", type: "bytes32", indexed: true }, { name: "numBonds", type: "uint8", indexed: false }, { name: "yield", type: "uint256", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Phase 12 — ZK Rating Verifier ABI
+// ---------------------------------------------------------------------------
+
+export const zkRatingVerifierAbi = [
+  { type: "function", name: "hasValidProof", inputs: [{ name: "bondId", type: "bytes32" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "getVerifiedRating", inputs: [{ name: "bondId", type: "bytes32" }], outputs: [{ name: "", type: "tuple", components: [{ name: "ratingIndex", type: "uint8" }, { name: "riskScore", type: "uint8" }, { name: "hasCollateral", type: "bool" }, { name: "couponRange", type: "uint8" }, { name: "verifiedAt", type: "uint256" }] }], stateMutability: "view" },
+  { type: "function", name: "verifyAndStore", inputs: [{ name: "bondId", type: "bytes32" }, { name: "proof", type: "bytes" }, { name: "publicInputs", type: "bytes32[]" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "event", name: "RatingIntegrityVerified", inputs: [{ name: "bondId", type: "bytes32", indexed: true }, { name: "ratingIndex", type: "uint8", indexed: false }, { name: "riskScore", type: "uint8", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
 ] as const;

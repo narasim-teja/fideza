@@ -73,6 +73,10 @@ export const config = {
   // Phase 11: ZK Verifier
   zkPortfolioVerifierAddress: opt("ZK_PORTFOLIO_VERIFIER_ADDRESS", "0x"),
 
+  // Phase 12: ZK Constraint + Rating Verifiers
+  zkConstraintVerifierAddress: opt("ZK_CONSTRAINT_VERIFIER_ADDRESS", "0x"),
+  zkRatingVerifierAddress: opt("ZK_RATING_VERIFIER_ADDRESS", "0x"),
+
   // AI provider settings
   aiProvider: (opt("AI_PROVIDER", "openrouter")) as
     | "anthropic"
