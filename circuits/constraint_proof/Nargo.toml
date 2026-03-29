@@ -1,0 +1,6 @@
+[package]
+name = "constraint_proof"
+type = "bin"
+authors = ["Fideza"]
+
+[dependencies]

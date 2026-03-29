@@ -1,0 +1,20 @@
+# Demo: 3-bond portfolio that meets investor constraints
+# Investor wanted: BB- to A- range, max 35% per bond, min 3 bonds, target 500 bps yield
+
+# Private inputs
+amounts = ["400000", "300000", "300000", "0", "0", "0", "0", "0"]
+weights_bps = ["3334", "3333", "3333", "0", "0", "0", "0", "0"]
+coupon_rates_bps = ["600", "550", "500", "0", "0", "0", "0", "0"]
+rating_indices = ["6", "10", "8", "0", "0", "0", "0", "0"]
+
+# Public: investor constraints
+constraint_min_rating_index = "12"   # BB- (worst acceptable)
+constraint_max_rating_index = "4"    # A+ (best acceptable)
+constraint_max_single_exposure_bps = "3500"
+constraint_min_bonds = "3"
+constraint_target_yield_bps = "500"
+
+# Public: actual results
+# weighted_coupon = floor((3334*600 + 3333*550 + 3333*500) / 10000) = floor(5500700/10000) = 550
+actual_weighted_coupon_bps = "550"
+actual_num_bonds = "3"

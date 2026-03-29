@@ -1,0 +1,6 @@
+[package]
+name = "rating_proof"
+type = "bin"
+authors = ["Fideza"]
+
+[dependencies]

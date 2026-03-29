@@ -1,0 +1,14 @@
+# Demo: A- rated infrastructure bond
+# Private: 3.5% coupon, 7 years maturity, has collateral, senior unsecured
+
+# Private inputs
+coupon_rate_bps = "350"
+maturity_months = "84"
+has_collateral = true
+seniority_index = "1"   # senior unsecured
+
+# Public: what the AI published
+published_rating_index = "6"     # A-
+published_risk_score = "25"      # mid-quality base(25) + coupon(5) + maturity(10) - collateral(10) = 30, but AI used 25 (within +/-5)
+published_has_collateral = true
+published_coupon_range = "1"     # 3-6%
