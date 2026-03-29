@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Dark rounded bg -->
+  <rect width="128" height="128" rx="28" fill="#1a1625"/>
+
+  <!-- Abstract prism: three overlapping parallelograms representing PT/YT split & composition -->
+  <polygon points="40,90 56,34 72,34 56,90" fill="#b49aff" opacity="0.9"/>
+  <polygon points="52,90 68,34 84,34 68,90" fill="#ecfb3e" opacity="0.7"/>
+  <polygon points="64,90 80,34 96,34 80,90" fill="#b49aff" opacity="0.5"/>
+</svg>

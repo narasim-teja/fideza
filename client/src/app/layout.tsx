@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fideza — AI-Governed RWA Marketplace",
+  title: "Fideza : AI-Rated Private Credit Protocol",
   description:
-    "Multi-asset RWA tokenization platform with AI compliance, PT/YT splitting, and privacy-preserving disclosure on Rayls.",
+    "AI-Rated Private Credit Protocol with AI compliance, PT/YT splitting, and privacy-preserving disclosure on Rayls.",
 };
 
 export default function RootLayout({

@@ -21,8 +21,8 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <Link href="/vaults" className="flex items-center gap-2.5">
           <Image
-            src="/rayls_logo.svg"
-            alt="Rayls"
+            src="/fideza_logo.svg"
+            alt="Fideza"
             width={28}
             height={28}
             className="rounded"
