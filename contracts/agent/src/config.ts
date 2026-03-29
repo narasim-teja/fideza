@@ -86,6 +86,9 @@ export const config = {
 // Bytecodes for ContractFactory deployment
 export const bytecodes = {
   vaultShareToken: loadBytecode("VaultShareToken"),
+  bondToken: loadBytecode("BondToken"),
+  invoiceToken: loadBytecode("InvoiceToken"),
+  absToken: loadBytecode("ABSToken"),
 };
 
 // ABIs loaded from compiled Foundry artifacts

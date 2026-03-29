@@ -14,10 +14,11 @@ function getProvider(): ethers.JsonRpcProvider {
 
 export async function readInvoice(
   provider?: ethers.JsonRpcProvider,
+  contractAddress?: string,
 ): Promise<AssetReadResult> {
   const p = provider ?? getProvider();
   const contract = new ethers.Contract(
-    config.invoiceTokenAddress,
+    contractAddress ?? config.invoiceTokenAddress,
     abis.invoiceToken,
     p,
   );
@@ -50,10 +51,11 @@ export async function readInvoice(
 
 export async function readBond(
   provider?: ethers.JsonRpcProvider,
+  contractAddress?: string,
 ): Promise<AssetReadResult> {
   const p = provider ?? getProvider();
   const contract = new ethers.Contract(
-    config.bondTokenAddress,
+    contractAddress ?? config.bondTokenAddress,
     abis.bondToken,
     p,
   );
@@ -92,10 +94,11 @@ export async function readBond(
 
 export async function readABS(
   provider?: ethers.JsonRpcProvider,
+  contractAddress?: string,
 ): Promise<AssetReadResult> {
   const p = provider ?? getProvider();
   const contract = new ethers.Contract(
-    config.absTokenAddress,
+    contractAddress ?? config.absTokenAddress,
     abis.absToken,
     p,
   );
