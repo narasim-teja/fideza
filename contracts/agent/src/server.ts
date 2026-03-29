@@ -172,8 +172,8 @@ const server = http.createServer(async (req, res) => {
 
     // ----- GET /api/admin/institutions -----
     if (req.method === "GET" && url === "/api/admin/institutions") {
-      const { provider } = getWallet();
-      const institutions = await getAllInstitutions(provider);
+      const { provider, wallet } = getWallet();
+      const institutions = await getAllInstitutions(provider, wallet.address);
       return json(res, 200, { institutions });
     }
 

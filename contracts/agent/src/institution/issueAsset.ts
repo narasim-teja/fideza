@@ -33,7 +33,11 @@ export interface IssuanceResult {
   riskTier: string;
   rating: string;
   recommendation: string;
+  recommendationRationale: string;
   numChecks: number;
+  checks: Array<{ checkId: string; checkName: string; result: string; severity: string; rationale: string; method: string }>;
+  riskFactors: string[];
+  disclosure: { disclosed: string[]; bucketed: string[]; withheld: string[] };
 }
 
 /** Map risk score (0-100) to letter rating (AAA through CCC). */
@@ -285,14 +289,25 @@ export async function issueAsset(
   // -----------------------------------------------------------------------
   // 4. REGISTER — add to BondPropertyRegistry (only if approved)
   // -----------------------------------------------------------------------
+  const baseResult: IssuanceResult = {
+    tokenAddress, assetId: asset.assetId, deployTxHash, mintTxHash,
+    attestationTxHash: report.reportHash,
+    riskScore: report.riskScore, riskTier: report.riskTier, rating,
+    recommendation: report.recommendation,
+    recommendationRationale: report.recommendationRationale,
+    numChecks: report.checks.length,
+    checks: report.checks,
+    riskFactors: report.riskFactors,
+    disclosure: {
+      disclosed: report.disclosureRecommendation.disclosedFields,
+      bucketed: report.disclosureRecommendation.bucketedFields.map((f) => `${f.field}: ${f.originalValue} → ${f.bucketedValue}`),
+      withheld: report.disclosureRecommendation.withheldFields.map((f) => f.field),
+    },
+  };
+
   if (report.recommendation !== "APPROVE") {
     console.log(`  [REGISTER] Skipped — asset ${report.recommendation} (not approved)`);
-    return {
-      tokenAddress, assetId: asset.assetId, deployTxHash, mintTxHash,
-      attestationTxHash: report.reportHash,
-      riskScore: report.riskScore, riskTier: report.riskTier, rating,
-      recommendation: report.recommendation, numChecks: report.checks.length,
-    };
+    return baseResult;
   }
   console.log("  [REGISTER] Adding to BondPropertyRegistry...");
 
@@ -343,16 +358,5 @@ export async function issueAsset(
     console.log(`    Registry failed (non-fatal): ${e.message?.slice(0, 80)}`);
   }
 
-  return {
-    tokenAddress,
-    assetId: asset.assetId,
-    deployTxHash,
-    mintTxHash,
-    attestationTxHash: report.reportHash,
-    riskScore: report.riskScore,
-    riskTier: report.riskTier,
-    rating,
-    recommendation: report.recommendation,
-    numChecks: report.checks.length,
-  };
+  return baseResult;
 }

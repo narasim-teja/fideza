@@ -99,17 +99,11 @@ export async function updateInstitutionStatus(
  */
 export async function getAllInstitutions(
   provider: ethers.JsonRpcProvider,
+  deployerAddress: string,
 ): Promise<InstitutionInfo[]> {
-  const registry = getRegistry(provider);
-  const filter = registry.filters.InstitutionRegistered();
-  const events = await registry.queryFilter(filter, 0, "latest");
-
+  // Query the deployer (known institution) directly — avoids slow event scanning
   const results: InstitutionInfo[] = [];
-  for (const event of events) {
-    const addr = (event as ethers.EventLog).args?.[0];
-    if (!addr) continue;
-    const info = await getInstitutionStatus(provider, addr);
-    if (info) results.push(info);
-  }
+  const info = await getInstitutionStatus(provider, deployerAddress);
+  if (info) results.push(info);
   return results;
 }

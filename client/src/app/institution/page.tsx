@@ -43,9 +43,14 @@ interface IssuanceResult {
   riskTier: string;
   rating: string;
   recommendation: string;
+  recommendationRationale: string;
   numChecks: number;
   deployTxHash: string;
   mintTxHash: string;
+  attestationTxHash: string;
+  checks: Array<{ checkId: string; checkName: string; result: string; severity: string; rationale: string; method: string }>;
+  riskFactors: string[];
+  disclosure: { disclosed: string[]; bucketed: string[]; withheld: string[] };
 }
 
 interface InstitutionInfo {
@@ -385,53 +390,132 @@ export default function InstitutionPage() {
               </Card>
 
               {issueResult && (
-                <Card className="border-emerald-500/20 bg-emerald-500/2">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="size-5 text-emerald-400" />
-                      <span className="font-semibold">Asset Issued & Rated</span>
-                      <Badge className={`ml-auto text-sm font-bold ${issueResult.recommendation === "APPROVE" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
-                        {issueResult.recommendation}
-                      </Badge>
-                    </div>
+                <div className="space-y-4">
+                  {/* Header + Rating Summary */}
+                  <Card className="border-emerald-500/20 bg-emerald-500/2">
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="size-5 text-emerald-400" />
+                        <span className="font-semibold">AI Compliance Analysis Complete</span>
+                        <Badge className={`ml-auto text-sm font-bold ${issueResult.recommendation === "APPROVE" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+                          {issueResult.recommendation}
+                        </Badge>
+                      </div>
 
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="rounded-lg bg-background p-3 text-center">
-                        <Shield className="size-3.5 text-fideza-lavender mx-auto mb-1" />
-                        <p className="text-xl font-bold text-fideza-lavender">{issueResult.rating}</p>
-                        <span className="text-[10px] text-muted-foreground">Rating</span>
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="rounded-lg bg-background p-3 text-center">
+                          <Shield className="size-3.5 text-fideza-lavender mx-auto mb-1" />
+                          <p className="text-xl font-bold text-fideza-lavender">{issueResult.rating}</p>
+                          <span className="text-[10px] text-muted-foreground">Credit Rating</span>
+                        </div>
+                        <div className="rounded-lg bg-background p-3 text-center">
+                          <TrendingUp className="size-3.5 text-fideza-lime mx-auto mb-1" />
+                          <p className="text-xl font-bold text-fideza-lime">{issueResult.riskScore}/100</p>
+                          <span className="text-[10px] text-muted-foreground">Risk Score</span>
+                        </div>
+                        <div className="rounded-lg bg-background p-3 text-center">
+                          <BarChart3 className="size-3.5 text-blue-400 mx-auto mb-1" />
+                          <p className="text-xl font-bold">Tier {issueResult.riskTier}</p>
+                          <span className="text-[10px] text-muted-foreground">Risk Tier</span>
+                        </div>
+                        <div className="rounded-lg bg-background p-3 text-center">
+                          <FileCheck className="size-3.5 text-emerald-400 mx-auto mb-1" />
+                          <p className="text-xl font-bold">{issueResult.numChecks}</p>
+                          <span className="text-[10px] text-muted-foreground">Checks Run</span>
+                        </div>
                       </div>
-                      <div className="rounded-lg bg-background p-3 text-center">
-                        <TrendingUp className="size-3.5 text-fideza-lime mx-auto mb-1" />
-                        <p className="text-xl font-bold text-fideza-lime">{issueResult.riskScore}</p>
-                        <span className="text-[10px] text-muted-foreground">Risk Score</span>
-                      </div>
-                      <div className="rounded-lg bg-background p-3 text-center">
-                        <BarChart3 className="size-3.5 text-blue-400 mx-auto mb-1" />
-                        <p className="text-xl font-bold">Tier {issueResult.riskTier}</p>
-                        <span className="text-[10px] text-muted-foreground">Risk Tier</span>
-                      </div>
-                      <div className="rounded-lg bg-background p-3 text-center">
-                        <FileCheck className="size-3.5 text-emerald-400 mx-auto mb-1" />
-                        <p className="text-xl font-bold">{issueResult.numChecks}</p>
-                        <span className="text-[10px] text-muted-foreground">Checks</span>
-                      </div>
-                    </div>
 
-                    <Separator />
+                      <p className="text-xs text-muted-foreground">{issueResult.recommendationRationale}</p>
+                    </CardContent>
+                  </Card>
 
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Token Address</span>
-                        <span className="font-mono text-xs">{issueResult.tokenAddress.slice(0, 14)}...</span>
+                  {/* Compliance Checks Detail */}
+                  <Card>
+                    <CardContent className="pt-6 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Shield className="size-4 text-fideza-lavender" />
+                        <span className="text-sm font-medium">Compliance Checks</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {issueResult.checks.filter((c) => c.result === "PASS").length}/{issueResult.checks.length} passed
+                        </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Asset ID</span>
-                        <span className="font-mono text-xs">{issueResult.assetId.slice(0, 14)}...</span>
+                      {issueResult.checks.map((check) => (
+                        <div key={check.checkId} className={`p-3 rounded-lg border ${check.result === "PASS" ? "border-emerald-500/20 bg-emerald-500/5" : check.result === "FAIL" ? "border-red-500/20 bg-red-500/5" : "border-yellow-500/20 bg-yellow-500/5"}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            {check.result === "PASS" ? <CheckCircle2 className="size-3.5 text-emerald-400" /> : check.result === "FAIL" ? <XCircle className="size-3.5 text-red-400" /> : <Loader2 className="size-3.5 text-yellow-400" />}
+                            <span className="text-xs font-medium">{check.checkName}</span>
+                            <Badge variant="outline" className="ml-auto text-[9px] py-0">{check.method === "llm" ? "AI" : "Rules"}</Badge>
+                            <Badge variant="outline" className="text-[9px] py-0">{check.severity}</Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground pl-5">{check.rationale}</p>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* Disclosure Policy */}
+                  <Card>
+                    <CardContent className="pt-6 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Shield className="size-4 text-fideza-lavender" />
+                        <span className="text-sm font-medium">Privacy-Preserving Disclosure</span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="rounded-lg border border-emerald-500/20 p-3">
+                          <span className="text-[10px] font-medium text-emerald-400 block mb-2">Public ({issueResult.disclosure.disclosed.length})</span>
+                          {issueResult.disclosure.disclosed.map((f) => (
+                            <span key={f} className="inline-block text-[10px] bg-emerald-500/10 text-emerald-400 rounded px-1.5 py-0.5 mr-1 mb-1">{f}</span>
+                          ))}
+                        </div>
+                        <div className="rounded-lg border border-yellow-500/20 p-3">
+                          <span className="text-[10px] font-medium text-yellow-400 block mb-2">Bucketed ({issueResult.disclosure.bucketed.length})</span>
+                          {issueResult.disclosure.bucketed.map((f) => (
+                            <span key={f} className="inline-block text-[10px] bg-yellow-500/10 text-yellow-400 rounded px-1.5 py-0.5 mr-1 mb-1">{f}</span>
+                          ))}
+                        </div>
+                        <div className="rounded-lg border border-red-500/20 p-3">
+                          <span className="text-[10px] font-medium text-red-400 block mb-2">Withheld ({issueResult.disclosure.withheld.length})</span>
+                          {issueResult.disclosure.withheld.map((f) => (
+                            <span key={f} className="inline-block text-[10px] bg-red-500/10 text-red-400 rounded px-1.5 py-0.5 mr-1 mb-1">{f}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* On-Chain Details */}
+                  <Card>
+                    <CardContent className="pt-6 space-y-2">
+                      <span className="text-sm font-medium">On-Chain Details</span>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Token Address</span>
+                          <span className="font-mono text-xs">{issueResult.tokenAddress.slice(0, 14)}...</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Asset ID</span>
+                          <span className="font-mono text-xs">{issueResult.assetId.slice(0, 14)}...</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Deploy TX</span>
+                          <span className="font-mono text-xs">{issueResult.deployTxHash.slice(0, 14)}...</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Attestation</span>
+                          <span className="font-mono text-xs">{issueResult.attestationTxHash.slice(0, 14)}...</span>
+                        </div>
+                      </div>
+                      {issueResult.riskFactors.length > 0 && (
+                        <div className="pt-2">
+                          <span className="text-xs text-muted-foreground">Risk Factors: </span>
+                          {issueResult.riskFactors.map((f) => (
+                            <Badge key={f} variant="outline" className="text-[10px] mr-1 text-yellow-400 border-yellow-500/30">{f}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </div>
           </div>
