@@ -57,6 +57,45 @@ proof bytes sent to client → user submits verifyAndStore() on-chain
 
 **Two verification methods** — users can verify portfolios via AI attestation (ECDSA signature, trusted) or ZK proof (cryptographic, trustless). Both implement the same `IPortfolioVerifier` interface.
 
+#### Zero-Knowledge Constraint Compliance Proof
+
+Proves the AI portfolio agent **actually followed the investor's parameters** when constructing the portfolio — not just that the portfolio is internally consistent, but that it respects the original constraints the user specified.
+
+**What's proven:**
+
+| Public Claim | Constraint Verified |
+|---|---|
+| Min rating index | No bond rated worse than investor's floor |
+| Max rating index | No bond rated better than investor's ceiling |
+| Max single exposure | No single bond exceeds investor's concentration limit |
+| Min bonds | Portfolio holds at least the required number of instruments |
+| Target yield | Weighted coupon rate meets or exceeds investor's yield target |
+| Bond count | Active position count matches claimed total |
+| Weight integrity | All weights sum to exactly 10,000 bps (100%) |
+
+**Private inputs (never revealed):** per-bond weights, coupon rates, rating indices, and amounts for up to 8 slots.
+
+#### Zero-Knowledge Bond Rating Integrity Proof
+
+Proves the AI agent's **published rating and risk score honestly derive from the private bond metadata** on the Privacy Node. The AI reads private data (coupon, maturity, collateral, seniority) and publishes a rating + risk score — this proof verifies it didn't lie.
+
+**What's proven:**
+
+| Public Claim | Constraint Verified |
+|---|---|
+| Rating index | Falls within the correct band for the bond's private risk profile |
+| Risk score | Within ±5 of the deterministic formula (base + coupon penalty + maturity penalty − collateral bonus) |
+| Collateral disclosure | Published collateral flag matches private truth |
+| Coupon range | Published bucket (0-3%, 3-6%, 6-10%, 10%+) matches actual coupon |
+
+**Rating bands (deterministic rules):**
+- AAA–AA (0-3): coupon < 3% AND has collateral AND senior
+- A–BBB (4-9): coupon < 6% AND (has collateral OR senior)
+- BB (10-12): coupon < 10%
+- B–CCC (13-16): everything else
+
+**Private inputs (never revealed):** exact coupon rate, maturity months, collateral status, seniority index.
+
 ### Layer 3: Lending Pool
 
 Vault share holders can borrow USDr against their illiquid portfolio positions:
@@ -299,6 +338,8 @@ cd contracts/agent && npm run server
 | PortfolioAttestation | [0xAc7E…5855](https://testnet-explorer.rayls.com/address/0xAc7E7F211594c1e25a88B0Ca8C2824a5d0315855) |
 | AIAttestationVerifier | [0x6adF…F6C4](https://testnet-explorer.rayls.com/address/0x6adF0665e7aFa93a9CF20749e7c6e09efd9cF6C4) |
 | ZKPortfolioVerifier | [0x60A1…3dA4](https://testnet-explorer.rayls.com/address/0x60A1c66c6C308Afb003769CD35fACF5f593B3dA4) |
+| ZKConstraintVerifier | [0x9f37…DAd9](https://testnet-explorer.rayls.com/address/0x9f370d528F77E400E17F9d525A9E7970377DDAd9) |
+| ZKRatingVerifier | [0xA45B…58ad](https://testnet-explorer.rayls.com/address/0xA45Bc8b5848664Fd9AF73F42EdeD281B238958ad) |
 | FidezaLendingPool | [0xCFe8…D1](https://testnet-explorer.rayls.com/address/0xCFe85abB69E13876d7de9Dd5427Bf61c51Cb61D1) |
 
 
@@ -319,6 +360,10 @@ fideza/
 │           ├── portfolio/          # Portfolio + ZK proof pipeline
 │           └── issuance/           # Agentic asset issuance
 └── circuits/
-    └── portfolio_proof/    # Noir ZK circuit
-        └── src/main.nr     # Circuit logic (8 assertions)
+    ├── portfolio_proof/    # ZK proof: portfolio composition is correct
+    │   └── src/main.nr     # 8 assertions (value, yield, count, ratings, exposure, HHI)
+    ├── constraint_proof/   # ZK proof: AI followed investor constraints
+    │   └── src/main.nr     # 7 assertions (rating range, exposure, bonds, yield)
+    └── rating_proof/       # ZK proof: AI rating honestly derives from private data
+        └── src/main.nr     # 4 assertions (rating band, risk score, collateral, coupon)
 ```
