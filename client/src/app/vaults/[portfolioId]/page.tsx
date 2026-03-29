@@ -3,7 +3,7 @@
 import { use } from "react";
 import type { Hex } from "viem";
 import { usePortfolioAttestation, useHasValidAttestation } from "@/hooks/use-contracts";
-import { VAULT_SHARE_TOKENS } from "@/lib/contracts";
+import { useVaultShareToken } from "@/hooks/use-vault-share-token";
 import { formatWei, formatBps, formatDiversification } from "@/lib/format";
 import { AttestationProof } from "@/components/vaults/attestation-proof";
 import { LendingPanel } from "@/components/vaults/lending-panel";
@@ -24,8 +24,8 @@ export default function PortfolioDetailPage({
   const { data: attestation, isLoading } = usePortfolioAttestation(portfolioId);
   const { data: isValid } = useHasValidAttestation(portfolioId);
 
-  // Find vault share token for this portfolio (if known)
-  const vaultShareToken = VAULT_SHARE_TOKENS[0]?.address;
+  // Resolve vault share token for this portfolio (cached or fallback)
+  const vaultShareToken = useVaultShareToken(portfolioId);
 
   if (isLoading) {
     return (
@@ -138,11 +138,21 @@ export default function PortfolioDetailPage({
           <AttestationProof attestation={a} isValid={isValid ?? false} />
         </div>
         <div className="lg:col-span-2">
-          <LendingPanel
-            portfolioId={portfolioId}
-            vaultShareToken={vaultShareToken}
-            attestedValue={a.totalValue}
-          />
+          {vaultShareToken ? (
+            <LendingPanel
+              portfolioId={portfolioId}
+              vaultShareToken={vaultShareToken}
+              attestedValue={a.totalValue}
+            />
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Share token not resolved. Create a new portfolio to enable borrowing.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

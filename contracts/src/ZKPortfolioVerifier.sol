@@ -6,7 +6,7 @@ import {IPortfolioVerifier} from "./IPortfolioVerifier.sol";
 
 /// @notice Interface for the Barretenberg-generated HonkVerifier.
 interface IHonkVerifier {
-    function verify(bytes calldata proof, bytes32[] calldata publicInputs) external returns (bool);
+    function verify(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bool);
 }
 
 /// @title ZKPortfolioVerifier

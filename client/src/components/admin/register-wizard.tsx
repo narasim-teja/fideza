@@ -43,14 +43,13 @@ interface DocFile {
 const REQUIRED_DOCS = [
   { key: "incorporation", label: "Certificate of Incorporation", desc: "Articles of incorporation or equivalent" },
   { key: "financials", label: "Audited Financial Statements", desc: "Most recent fiscal year" },
-  { key: "aml", label: "AML/KYC Policy", desc: "Anti-money laundering and KYC procedures" },
+  { key: "tax", label: "Tax Registration", desc: "Tax ID or VAT registration certificate" },
   { key: "ownership", label: "Ownership Structure", desc: "UBO declaration and org chart" },
 ] as const;
 
 const OPTIONAL_DOCS = [
   { key: "license", label: "Regulatory License", desc: "Operating license from relevant authority" },
   { key: "insurance", label: "Professional Insurance", desc: "E&O or professional liability coverage" },
-  { key: "tax", label: "Tax Registration", desc: "Tax ID or VAT registration certificate" },
 ] as const;
 
 interface RegisterWizardProps {
@@ -243,7 +242,7 @@ export function RegisterWizard({ agentUrl, onComplete, onCancel }: RegisterWizar
                 <SelectField label="Jurisdiction *" value={jurisdiction} onChange={setJurisdiction} options={[...JURISDICTIONS]} />
                 <SelectField label="Business Type *" value={businessType} onChange={setBusinessType} options={[...BUSINESS_TYPES]} />
                 <Field label="Website" value={website} onChange={setWebsite} placeholder="https://acmecapital.com" icon={<Globe className="size-3.5" />} />
-                <SelectField label="Assets Under Management" value={aum} onChange={setAum} options={[...AUM_RANGES]} />
+                <SelectField label="Assets" value={aum} onChange={setAum} options={[...AUM_RANGES]} />
                 <Field label="Year Founded" value={yearFounded} onChange={setYearFounded} placeholder="2018" />
                 <Field label="Headquarters City" value={headquartersCity} onChange={setHeadquartersCity} placeholder="Sao Paulo" />
               </div>
@@ -339,7 +338,7 @@ export function RegisterWizard({ agentUrl, onComplete, onCancel }: RegisterWizar
 
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Optional Documents</p>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {OPTIONAL_DOCS.map((d) => (
                     <DocSlot key={d.key} label={d.label} desc={d.desc} file={docs[d.key] ?? null} onUpload={() => simulateUpload(d.key)} onRemove={() => removeDoc(d.key)} />
                   ))}

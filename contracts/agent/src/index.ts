@@ -33,6 +33,7 @@ import { optimizePortfolio } from "./portfolio/optimizer";
 import { constructPortfolio } from "./portfolio/vaultConstructor";
 import { attestPortfolio } from "./portfolio/attestor";
 import { bridgePortfolioShares } from "./portfolio/bridger";
+import { proveFromPortfolio } from "./portfolio/zkProver";
 
 // ---------------------------------------------------------------------------
 // CLI arg helpers
@@ -268,6 +269,18 @@ async function runPortfolioPipeline(constraintsJson: string) {
   const recipientAddress = getArg("recipient") ?? undefined;
   const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet, recipientAddress);
 
+  // 7. ZK PROVE — Generate and submit ZK composition proof
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("[ZK PROVE] Generating portfolio composition proof...");
+  console.log("=".repeat(60));
+  let zkProofTxHash = "skipped";
+  try {
+    zkProofTxHash = await proveFromPortfolio(portfolioId, portfolio);
+  } catch (e: any) {
+    console.log(`  ZK proof skipped: ${e.message}`);
+    console.log("  (Portfolio is still verified via AI attestation)");
+  }
+
   // Summary
   console.log(`\n${"=".repeat(60)}`);
   console.log("PORTFOLIO CONSTRUCTION COMPLETE");
@@ -277,6 +290,7 @@ async function runPortfolioPipeline(constraintsJson: string) {
   console.log(`  Create TX:          ${txHash}`);
   console.log(`  Attestation TX:     ${bridgeResult.attestationTxHash}`);
   console.log(`  Bridge TX:          ${bridgeResult.bridgeTxHash}`);
+  console.log(`  ZK Proof TX:        ${zkProofTxHash}`);
   console.log(`  Bonds:              ${attestation.numBonds}`);
   console.log(`  Diversification:    ${attestation.diversificationScore}/10`);
   console.log(`  Weighted Yield:     ${attestation.weightedCouponBps} bps`);

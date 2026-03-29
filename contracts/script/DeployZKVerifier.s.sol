@@ -4,9 +4,10 @@ pragma solidity 0.8.27;
 import {Script, console} from "forge-std/Script.sol";
 import {ZKPortfolioVerifier} from "../src/ZKPortfolioVerifier.sol";
 import {FidezaLendingPool} from "../src/FidezaLendingPool.sol";
+import {HonkVerifier} from "../src/plonk_vk.sol";
 
 /// @title DeployZKVerifier
-/// @notice Deploys UltraVerifier (generated), ZKPortfolioVerifier, and a new
+/// @notice Deploys HonkVerifier (generated), ZKPortfolioVerifier, and a new
 ///         FidezaLendingPool wired to the ZK verifier.
 ///
 /// Usage:
@@ -23,12 +24,12 @@ contract DeployZKVerifier is Script {
 
         vm.startBroadcast(deployerKey);
 
-        // 1. Deploy the Barretenberg-generated UltraVerifier
-        address ultraVerifier = deployCode("plonk_vk.sol:HonkVerifier");
-        console.log("  HonkVerifier (UltraVerifier):", ultraVerifier);
+        // 1. Deploy the Barretenberg-generated HonkVerifier
+        HonkVerifier honkVerifier = new HonkVerifier();
+        console.log("  HonkVerifier:                ", address(honkVerifier));
 
         // 2. Deploy ZKPortfolioVerifier wrapping it
-        ZKPortfolioVerifier zkVerifier = new ZKPortfolioVerifier(ultraVerifier);
+        ZKPortfolioVerifier zkVerifier = new ZKPortfolioVerifier(address(honkVerifier));
         console.log("  ZKPortfolioVerifier:         ", address(zkVerifier));
 
         // 3. Deploy new FidezaLendingPool with ZK verifier

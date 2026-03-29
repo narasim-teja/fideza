@@ -1,28 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ASSET_TYPE_COLORS, ratingColor } from "@/lib/constants";
 import { formatBytes32 } from "@/lib/format";
-import { Shield, Lock } from "lucide-react";
+import { Lock, Info } from "lucide-react";
 
 interface BondInfo {
   assetId: string;
   assetType: string;
   rating: string;
-  couponRange: string;
-  maturityBucket: string;
+  coupon: string;
+  maturity: string;
   currency: string;
   issuerCategory: string;
-  hasCollateral: boolean;
   riskScore: number;
 }
 
 export function BondCard({ bond }: { bond: BondInfo }) {
+  const [showRiskInfo, setShowRiskInfo] = useState(false);
   const typeColors = ASSET_TYPE_COLORS[bond.assetType] ?? ASSET_TYPE_COLORS.BOND;
   const rColors = ratingColor(bond.rating);
 
-  const riskTier = bond.riskScore >= 80 ? "A" : bond.riskScore >= 60 ? "B" : "C";
+  const riskTier = bond.riskScore >= 70 ? "A" : bond.riskScore >= 40 ? "B" : "C";
   const riskBarColor =
     riskTier === "A"
       ? "bg-emerald-400"
@@ -59,9 +60,16 @@ export function BondCard({ bond }: { bond: BondInfo }) {
         <p className="text-sm font-medium truncate">{bond.issuerCategory}</p>
 
         {/* Risk bar */}
-        <div className="space-y-1">
+        <div className="space-y-1 relative">
           <div className="flex items-center justify-between text-[10px]">
-            <span className="text-muted-foreground">Risk Score</span>
+            <button
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+              onMouseEnter={() => setShowRiskInfo(true)}
+              onMouseLeave={() => setShowRiskInfo(false)}
+            >
+              Risk Score
+              <Info className="size-2.5" />
+            </button>
             <span className={`font-semibold ${riskTextColor}`}>
               {bond.riskScore} <span className="text-muted-foreground font-normal">/ 100</span>
             </span>
@@ -72,17 +80,38 @@ export function BondCard({ bond }: { bond: BondInfo }) {
               style={{ width: `${bond.riskScore}%` }}
             />
           </div>
+
+          {/* Risk info tooltip */}
+          {showRiskInfo && (
+            <div className="absolute left-0 top-full mt-1 z-10 w-64 p-3 rounded-lg bg-popover border border-border shadow-lg text-[10px] space-y-1.5">
+              <p className="font-medium text-xs">How is risk calculated?</p>
+              <p className="text-muted-foreground leading-relaxed">
+                Starts at 100 and deducts points per failed compliance check.
+                Each check has a severity level:
+              </p>
+              <div className="space-y-0.5 text-muted-foreground">
+                <p><span className="text-red-400 font-medium">Critical fail: -30</span> (KYB, sanctions)</p>
+                <p><span className="text-yellow-400 font-medium">Major fail: -15</span> (schema, value limits)</p>
+                <p><span className="text-foreground font-medium">Minor fail: -5</span> (coupon range, maturity)</p>
+              </div>
+              <div className="pt-1 border-t border-border space-y-0.5 text-muted-foreground">
+                <p><span className="text-emerald-400">Tier A</span> = 70-100 (low risk)</p>
+                <p><span className="text-yellow-400">Tier B</span> = 40-69 (moderate risk)</p>
+                <p><span className="text-red-400">Tier C</span> = 0-39 (high risk)</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Details grid */}
         <div className="grid grid-cols-3 gap-2 text-[11px]">
           <div>
             <span className="text-muted-foreground block">Coupon</span>
-            <span className="font-medium text-fideza-lime">{bond.couponRange}</span>
+            <span className="font-medium text-fideza-lime">{bond.coupon}</span>
           </div>
           <div>
             <span className="text-muted-foreground block">Maturity</span>
-            <span className="font-medium">{bond.maturityBucket}</span>
+            <span className="font-medium">{bond.maturity}</span>
           </div>
           <div>
             <span className="text-muted-foreground block">Currency</span>
@@ -91,13 +120,7 @@ export function BondCard({ bond }: { bond: BondInfo }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 pt-2 border-t border-border">
-          {bond.hasCollateral && (
-            <div className="flex items-center gap-1 text-[10px] text-emerald-400">
-              <Shield className="size-2.5" />
-              Collateralized
-            </div>
-          )}
+        <div className="flex items-center pt-2 border-t border-border">
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
             <Lock className="size-2.5" />
             {formatBytes32(bond.assetId)}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { PoolStats } from "@/components/lending/pool-stats";
 import { LenderPanel } from "@/components/lending/lender-panel";
 import { BorrowerPanel } from "@/components/lending/borrower-panel";
@@ -36,6 +37,9 @@ const STEPS = [
 ];
 
 export default function LendingPage() {
+  const searchParams = useSearchParams();
+  const portfolioParam = searchParams.get("portfolio") ?? undefined;
+
   return (
     <div className="space-y-6">
       <div>
@@ -49,7 +53,7 @@ export default function LendingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LenderPanel />
-        <BorrowerPanel />
+        <BorrowerPanel preselectedPortfolioId={portfolioParam} />
       </div>
 
       {/* How it works */}

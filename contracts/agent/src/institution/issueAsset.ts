@@ -358,5 +358,41 @@ export async function issueAsset(
     console.log(`    Registry failed (non-fatal): ${e.message?.slice(0, 80)}`);
   }
 
+  // -----------------------------------------------------------------------
+  // 5. PUBLISH — register on public BondCatalog (privacy-safe metadata)
+  // -----------------------------------------------------------------------
+  if (config.bondCatalogAddress !== "0x" && config.publicChainRpc) {
+    console.log("  [PUBLISH] Registering on public BondCatalog...");
+    try {
+      const publicProvider = new ethers.JsonRpcProvider(config.publicChainRpc);
+      const publicWallet = new ethers.Wallet(config.deployerPrivateKey || config.agentPrivateKey, publicProvider);
+      const catalog = new ethers.Contract(
+        config.bondCatalogAddress,
+        abis.bondCatalog,
+        publicWallet,
+      );
+
+      const couponExact = `${(couponBps / 100).toFixed(2)}%`;
+      const maturityYears = ((maturityTs - Math.floor(Date.now() / 1000)) / (365 * 24 * 3600));
+      const maturityLabel = maturityYears < 1 ? `${Math.round(maturityYears * 12)} months`
+        : `${maturityYears.toFixed(1)} years`;
+
+      await catalog.registerBond({
+        assetId: asset.assetId,
+        assetType: assetTypeLabel,
+        rating,
+        couponRange: couponExact,
+        maturityBucket: maturityLabel,
+        currency: String(request.metadata.currency ?? "USD"),
+        issuerCategory: regProps.issuerCategory,
+        hasCollateral: regProps.hasCollateral,
+        riskScore: report.riskScore,
+      }, { type: 0 });
+      console.log(`    Published to public BondCatalog`);
+    } catch (e: any) {
+      console.log(`    BondCatalog publish failed (non-fatal): ${e.message?.slice(0, 80)}`);
+    }
+  }
+
   return baseResult;
 }

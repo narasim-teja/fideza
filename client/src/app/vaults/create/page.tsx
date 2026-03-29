@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { explorerTxUrl } from "@/lib/constants";
 import { formatBps, formatDiversification, truncateAddress } from "@/lib/format";
 import { useDeposit } from "@/hooks/use-contracts";
+import { cacheShareToken } from "@/hooks/use-vault-share-token";
 import { toast } from "sonner";
 import {
   Brain,
@@ -43,6 +44,7 @@ const PIPELINE_STAGES = [
   { key: "CONSTRUCT", label: "On-Chain Build", desc: "Create vault + deploy share token" },
   { key: "ATTEST", label: "Sign Attestation", desc: "ECDSA-sign portfolio properties" },
   { key: "BRIDGE", label: "Bridge Shares", desc: "Teleport shares to public chain" },
+  { key: "ZK_PROVE", label: "ZK Proof", desc: "Generate Noir composition proof" },
 ] as const;
 
 interface PortfolioResult {
@@ -139,6 +141,11 @@ export default function CreatePortfolioPage() {
       const data = await res.json();
       setCurrentStage(PIPELINE_STAGES.length - 1);
       setResult(data);
+
+      // Cache share token address for lending resolution
+      if (data.portfolioId && data.shareTokenAddress) {
+        cacheShareToken(data.portfolioId, data.shareTokenAddress);
+      }
     } catch (e: any) {
       setError(e.message || "Failed to connect to agent server");
     } finally {

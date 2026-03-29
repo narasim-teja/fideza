@@ -12,6 +12,7 @@ import {
   bondCatalogAbi,
   portfolioAttestationAbi,
   lendingPoolAbi,
+  zkPortfolioVerifierAbi,
 } from "@/lib/contracts";
 
 // ---------------------------------------------------------------------------
@@ -420,4 +421,36 @@ export function useLiquidate() {
     liquidateAsync: (loanId: bigint, amount: bigint) =>
       writeContractAsync({ abi: lendingPoolAbi, address: VAULT_CONTRACTS.lendingPool, functionName: "liquidate", args: [loanId], value: amount }),
   };
+}
+
+// ---------------------------------------------------------------------------
+// ZKPortfolioVerifier reads (Phase 11)
+// ---------------------------------------------------------------------------
+
+export function useZKProofValid(portfolioId: Hex | undefined) {
+  return useReadContract({
+    abi: zkPortfolioVerifierAbi,
+    address: VAULT_CONTRACTS.zkPortfolioVerifier,
+    functionName: "hasValidProof",
+    args: portfolioId ? [portfolioId] : undefined,
+    query: { enabled: !!portfolioId },
+  });
+}
+
+export function useZKVerifiedPortfolio(portfolioId: Hex | undefined) {
+  return useReadContract({
+    abi: zkPortfolioVerifierAbi,
+    address: VAULT_CONTRACTS.zkPortfolioVerifier,
+    functionName: "getVerifiedPortfolio",
+    args: portfolioId ? [portfolioId] : undefined,
+    query: { enabled: !!portfolioId },
+  });
+}
+
+export function useZKPortfolioCount() {
+  return useReadContract({
+    abi: zkPortfolioVerifierAbi,
+    address: VAULT_CONTRACTS.zkPortfolioVerifier,
+    functionName: "getPortfolioCount",
+  });
 }

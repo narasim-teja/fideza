@@ -227,6 +227,83 @@ async function proveAndSubmit(portfolioId: string): Promise<string> {
   return receipt!.hash;
 }
 
+/**
+ * Generate ZK proof from portfolio data the pipeline already has,
+ * then submit to ZKPortfolioVerifier on public chain.
+ * Called as step 7 in the portfolio construction pipeline.
+ */
+async function proveFromPortfolio(
+  portfolioId: string,
+  portfolio: { allocations: { amount: bigint; weightBps: number; couponRateBps: number; rating: string }[] },
+): Promise<string> {
+  const bonds: BondInput[] = portfolio.allocations.map((a) => ({
+    amount: a.amount,
+    weightBps: a.weightBps,
+    couponRateBps: a.couponRateBps,
+    ratingIndex: ratingToIndex(a.rating),
+  }));
+
+  if (bonds.length > MAX_BONDS) {
+    throw new Error(`Portfolio has ${bonds.length} bonds, max is ${MAX_BONDS}`);
+  }
+
+  const pub = computePublicInputs(bonds);
+  console.log("  Public inputs:", {
+    ...pub,
+    totalValue: pub.totalValue.toString(),
+  });
+
+  // Write Prover.toml
+  const toml = generateProverToml(bonds, pub);
+  fs.writeFileSync(path.join(CIRCUIT_DIR, "Prover.toml"), toml);
+
+  // Compile + execute + prove
+  console.log("  Compiling circuit...");
+  execSync("nargo compile", { cwd: CIRCUIT_DIR, stdio: "pipe" });
+  console.log("  Generating witness...");
+  execSync("nargo execute", { cwd: CIRCUIT_DIR, stdio: "pipe" });
+  console.log("  Generating proof...");
+  execSync(
+    "bb prove -b target/portfolio_proof.json -w target/portfolio_proof.gz -o target/proof -t evm-no-zk",
+    { cwd: CIRCUIT_DIR, stdio: "pipe" },
+  );
+
+  // Read proof
+  const proofBytes = fs.readFileSync(path.join(CIRCUIT_DIR, "target/proof/proof"));
+  console.log(`  Proof size: ${proofBytes.length} bytes`);
+
+  // Format public inputs
+  const publicInputs = [
+    ethers.zeroPadValue(ethers.toBeHex(pub.totalValue), 32),
+    ethers.zeroPadValue(ethers.toBeHex(pub.weightedCouponBps), 32),
+    ethers.zeroPadValue(ethers.toBeHex(pub.numBonds), 32),
+    ethers.zeroPadValue(ethers.toBeHex(pub.minRatingIndex), 32),
+    ethers.zeroPadValue(ethers.toBeHex(pub.maxRatingIndex), 32),
+    ethers.zeroPadValue(ethers.toBeHex(pub.maxSingleExposureBps), 32),
+    ethers.zeroPadValue(ethers.toBeHex(pub.diversificationScore), 32),
+  ];
+
+  // Submit to public chain
+  const publicProvider = new ethers.JsonRpcProvider(config.publicChainRpc);
+  const publicWallet = new ethers.Wallet(config.agentPrivateKey, publicProvider);
+
+  const zkVerifier = new ethers.Contract(
+    config.zkPortfolioVerifierAddress,
+    ["function verifyAndStore(bytes32,bytes,bytes32[]) external"],
+    publicWallet,
+  );
+
+  console.log("  Submitting ZK proof on-chain...");
+  const tx = await zkVerifier.verifyAndStore(portfolioId, proofBytes, publicInputs, { type: 0 });
+  const receipt = await tx.wait();
+  console.log(`  ZK proof verified! TX: ${receipt!.hash}`);
+  console.log(`    Total value: ${pub.totalValue}`);
+  console.log(`    Bonds: ${pub.numBonds}`);
+  console.log(`    Diversification: ${pub.diversificationScore}/10`);
+
+  return receipt!.hash;
+}
+
 // CLI entry point
 if (require.main === module) {
   const portfolioId = process.argv[2];
@@ -242,4 +319,4 @@ if (require.main === module) {
     });
 }
 
-export { generateProof, proveAndSubmit, computePublicInputs, generateProverToml };
+export { generateProof, proveAndSubmit, proveFromPortfolio, computePublicInputs, generateProverToml };

@@ -105,4 +105,5 @@ export const abis = {
   portfolioVault: loadABI("PortfolioVault"),
   vaultShareToken: loadABI("VaultShareToken"),
   portfolioAttestation: loadABI("PortfolioAttestation"),
+  bondCatalog: loadABI("BondCatalog"),
 };

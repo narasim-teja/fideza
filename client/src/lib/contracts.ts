@@ -35,10 +35,13 @@ export type AssetKey = "invoice" | "bond" | "abs";
 // ---------------------------------------------------------------------------
 
 export const VAULT_CONTRACTS = {
-  bondCatalog: "0x66C3E620A0Af2D7C8c4C5e738E55bBc65A41d645" as Address,
+  bondCatalog: "0x40713c6040eA8E4c6a88897cf70A5e789553aaC0" as Address,
   portfolioAttestation: "0xAc7E7F211594c1e25a88B0Ca8C2824a5d0315855" as Address,
   aiAttestationVerifier: "0x6adF0665e7aFa93a9CF20749e7c6e09efd9cF6C4" as Address,
-  lendingPool: "0x36C508b13B5a9509eB0E8d9F173Ba886961bcFca" as Address,
+  lendingPool: "0xCFe85abB69E13876d7de9Dd5427Bf61c51Cb61D1" as Address, // ZK-backed lending pool (Phase 11)
+  lendingPoolLegacy: "0x36C508b13B5a9509eB0E8d9F173Ba886961bcFca" as Address, // AI-backed (Phase 8)
+  // Phase 11: ZK Verifier
+  zkPortfolioVerifier: "0x60A1c66c6C308Afb003769CD35fACF5f593B3dA4" as Address,
 } as const;
 
 /** Known vault share tokens on public chain (mirror tokens after bridge) */
@@ -161,4 +164,16 @@ export const lendingPoolAbi = [
   { type: "event", name: "Borrowed", inputs: [{ name: "loanId", type: "uint256", indexed: true }, { name: "borrower", type: "address", indexed: true }, { name: "principal", type: "uint256", indexed: false }, { name: "portfolioId", type: "bytes32", indexed: false }] },
   { type: "event", name: "Repaid", inputs: [{ name: "loanId", type: "uint256", indexed: true }, { name: "borrower", type: "address", indexed: true }, { name: "totalPaid", type: "uint256", indexed: false }] },
   { type: "event", name: "Liquidated", inputs: [{ name: "loanId", type: "uint256", indexed: true }, { name: "liquidator", type: "address", indexed: true }, { name: "debtRepaid", type: "uint256", indexed: false }] },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Phase 11 — ZK Portfolio Verifier ABI
+// ---------------------------------------------------------------------------
+
+export const zkPortfolioVerifierAbi = [
+  { type: "function", name: "hasValidProof", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "getVerifiedPortfolio", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "", type: "tuple", components: [{ name: "totalValue", type: "uint256" }, { name: "weightedCouponBps", type: "uint256" }, { name: "numBonds", type: "uint8" }, { name: "minRatingIndex", type: "uint8" }, { name: "maxRatingIndex", type: "uint8" }, { name: "maxSingleExposureBps", type: "uint256" }, { name: "diversificationScore", type: "uint8" }, { name: "verifiedAt", type: "uint256" }] }], stateMutability: "view" },
+  { type: "function", name: "verifyPortfolio", inputs: [{ name: "portfolioId", type: "bytes32" }], outputs: [{ name: "valid", type: "bool" }, { name: "totalValue", type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getPortfolioCount", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { type: "event", name: "PortfolioVerified", inputs: [{ name: "portfolioId", type: "bytes32", indexed: true }, { name: "totalValue", type: "uint256", indexed: false }, { name: "numBonds", type: "uint8", indexed: false }, { name: "diversificationScore", type: "uint8", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
 ] as const;

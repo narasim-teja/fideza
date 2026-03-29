@@ -27,7 +27,7 @@ export function Navbar() {
             height={28}
             className="rounded"
           />
-          <span className="text-lg font-semibold text-fideza-lavender tracking-tight">
+          <span className="text-xl font-normal text-fideza-lavender tracking-tight" style={{ fontFamily: "var(--font-orelega)" }}>
             Fideza
           </span>
         </Link>

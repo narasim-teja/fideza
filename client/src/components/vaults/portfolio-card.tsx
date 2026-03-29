@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolioAttestation } from "@/hooks/use-contracts";
 import { formatWei, formatBps, formatDiversification, formatTimestamp } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock, TrendingUp, BarChart3, ShieldCheck } from "lucide-react";
+import { Lock, TrendingUp, BarChart3, ShieldCheck, Landmark } from "lucide-react";
 import type { Hex } from "viem";
 
 export function PortfolioCard({ portfolioId }: { portfolioId: Hex }) {
+  const router = useRouter();
   const { data: attestation, isLoading } = usePortfolioAttestation(portfolioId);
 
   if (isLoading) {
@@ -74,8 +76,21 @@ export function PortfolioCard({ portfolioId }: { portfolioId: Hex }) {
               <p className="font-semibold">{a.numBonds} instruments</p>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground border-t border-border pt-2">
-            Attested {formatTimestamp(a.timestamp)}
+          <div className="flex items-center border-t border-border pt-2">
+            <span className="text-xs text-muted-foreground">
+              Attested {formatTimestamp(a.timestamp)}
+            </span>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                router.push(`/lending?portfolio=${portfolioId}`);
+              }}
+              className="ml-auto flex items-center gap-1 text-[11px] font-medium text-fideza-lavender hover:underline"
+            >
+              <Landmark className="size-3" />
+              Borrow
+            </button>
           </div>
         </CardContent>
       </Card>

@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { BondCard } from "./bond-card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Search, ArrowUpDown, Plus } from "lucide-react";
 import Link from "next/link";
+import { useBondCatalog } from "@/hooks/use-contracts";
 
-const TYPE_FILTERS = ["All", "BOND", "INVOICE", "ABS_TRANCHE"] as const;
 const GRADE_FILTERS = ["All", "Investment Grade", "High Yield"] as const;
 const SORT_OPTIONS = ["Rating", "Risk Score", "Coupon"] as const;
 
@@ -15,32 +16,27 @@ const INVESTMENT_GRADE = ["AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "B
 
 const RATING_ORDER = ["AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", "BB+", "BB", "BB-", "B+", "B", "B-", "CCC"];
 
-const BOND_CATALOG = [
-  { assetId: "0xb6b7c9bd65da", assetType: "BOND", rating: "BB+", couponRange: "7-9%", maturityBucket: "5-10 years", currency: "USD", issuerCategory: "BR Energy/Utilities, High Yield", hasCollateral: false, riskScore: 55 },
-  { assetId: "0xdc5f3233554c", assetType: "INVOICE", rating: "BBB+", couponRange: "1-2%", maturityBucket: "0-2 years", currency: "BRL", issuerCategory: "BR Construction, Investment Grade", hasCollateral: false, riskScore: 72 },
-  { assetId: "0xa795beaafc8", assetType: "ABS_TRANCHE", rating: "A", couponRange: "3-4%", maturityBucket: "2-5 years", currency: "BRL", issuerCategory: "BR Auto Loans, Investment Grade", hasCollateral: true, riskScore: 82 },
-  { assetId: "0xee8ea20be48e", assetType: "BOND", rating: "BBB", couponRange: "5-6%", maturityBucket: "2-5 years", currency: "USD", issuerCategory: "BR Telecom, Investment Grade", hasCollateral: false, riskScore: 68 },
-  { assetId: "0x61fb06d5fc60", assetType: "BOND", rating: "A-", couponRange: "4-5%", maturityBucket: "5-10 years", currency: "BRL", issuerCategory: "BR Infrastructure, Investment Grade", hasCollateral: true, riskScore: 80 },
-  { assetId: "0xaa6c49eae34f", assetType: "INVOICE", rating: "BBB", couponRange: "2-3%", maturityBucket: "0-2 years", currency: "BRL", issuerCategory: "BR Agriculture, Investment Grade", hasCollateral: false, riskScore: 65 },
-  { assetId: "0x4de93f1c5fe3", assetType: "ABS_TRANCHE", rating: "AA-", couponRange: "2-3%", maturityBucket: "5-10 years", currency: "BRL", issuerCategory: "BR Mortgages, Investment Grade", hasCollateral: true, riskScore: 90 },
-  { assetId: "0xfd0cffe1b904", assetType: "BOND", rating: "BB", couponRange: "8-10%", maturityBucket: "2-5 years", currency: "USD", issuerCategory: "BR Banking, High Yield", hasCollateral: false, riskScore: 48 },
-  { assetId: "0xac5cd22ba21a", assetType: "INVOICE", rating: "A", couponRange: "1-2%", maturityBucket: "0-2 years", currency: "BRL", issuerCategory: "BR Technology, Investment Grade", hasCollateral: false, riskScore: 85 },
-  { assetId: "0x4504efc3a747", assetType: "ABS_TRANCHE", rating: "BBB+", couponRange: "4-5%", maturityBucket: "2-5 years", currency: "BRL", issuerCategory: "BR Consumer Credit, Investment Grade", hasCollateral: true, riskScore: 70 },
-  { assetId: "0x7c3d9f12e5b8", assetType: "BOND", rating: "B+", couponRange: "9-12%", maturityBucket: "5-10 years", currency: "USD", issuerCategory: "BR Mining, High Yield", hasCollateral: true, riskScore: 38 },
-  { assetId: "0x9e2a4b7d3c1f", assetType: "BOND", rating: "BBB-", couponRange: "5-7%", maturityBucket: "2-5 years", currency: "BRL", issuerCategory: "BR Retail, Investment Grade", hasCollateral: false, riskScore: 62 },
-];
-
 export function BondCatalog() {
-  const [typeFilter, setTypeFilter] = useState<string>("All");
   const [gradeFilter, setGradeFilter] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<string>("Rating");
 
-  const allBonds = BOND_CATALOG;
+  const { data: onChainBonds, isLoading } = useBondCatalog();
+
+  // Map on-chain struct to UI shape
+  const allBonds = ((onChainBonds as any[]) ?? []).map((b) => ({
+    assetId: b.assetId as string,
+    assetType: b.assetType as string,
+    rating: b.rating as string,
+    coupon: b.couponRange as string,
+    maturity: b.maturityBucket as string,
+    currency: b.currency as string,
+    issuerCategory: b.issuerCategory as string,
+    riskScore: Number(b.riskScore),
+  }));
 
   const filtered = allBonds
     .filter((b) => {
-      if (typeFilter !== "All" && b.assetType !== typeFilter) return false;
       if (gradeFilter === "Investment Grade" && !INVESTMENT_GRADE.includes(b.rating)) return false;
       if (gradeFilter === "High Yield" && INVESTMENT_GRADE.includes(b.rating)) return false;
       if (search) {
@@ -57,30 +53,24 @@ export function BondCatalog() {
     .sort((a, b) => {
       if (sortBy === "Risk Score") return b.riskScore - a.riskScore;
       if (sortBy === "Coupon") {
-        const getMax = (r: string) => {
-          const match = r.match(/(\d+)/g);
-          return match ? parseInt(match[match.length - 1]) : 0;
-        };
-        return getMax(b.couponRange) - getMax(a.couponRange);
+        return parseFloat(b.coupon) - parseFloat(a.coupon);
       }
       // Rating (best first)
       return RATING_ORDER.indexOf(a.rating) - RATING_ORDER.indexOf(b.rating);
     });
 
   // Summary stats
-  const bondCount = allBonds.filter((b) => b.assetType === "BOND").length;
-  const invoiceCount = allBonds.filter((b) => b.assetType === "INVOICE").length;
-  const absCount = allBonds.filter((b) => b.assetType === "ABS_TRANCHE").length;
+  const igCount = allBonds.filter((b) => INVESTMENT_GRADE.includes(b.rating)).length;
+  const hyCount = allBonds.length - igCount;
   const avgRisk = allBonds.length > 0 ? Math.round(allBonds.reduce((s, b) => s + b.riskScore, 0) / allBonds.length) : 0;
 
   return (
     <div className="space-y-4">
       {/* Summary bar */}
       <div className="flex items-center gap-6 text-xs text-muted-foreground">
-        <span>{allBonds.length} instruments</span>
-        <span>{bondCount} bonds</span>
-        <span>{invoiceCount} invoices</span>
-        <span>{absCount} ABS</span>
+        <span>{allBonds.length} bonds</span>
+        <span>{igCount} investment grade</span>
+        <span>{hyCount} high yield</span>
         <span>Avg risk score <strong className="text-foreground">{avgRisk}</strong></span>
         <Link
           href="/vaults/create"
@@ -92,25 +82,6 @@ export function BondCatalog() {
 
       {/* Filters + Search */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1.5">
-          {TYPE_FILTERS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setTypeFilter(f)}
-              className={cn(
-                "px-3 py-1 text-xs font-medium rounded-full border transition-colors",
-                typeFilter === f
-                  ? "bg-fideza-lavender/15 text-fideza-lavender border-fideza-lavender/30"
-                  : "text-muted-foreground border-border hover:border-muted-foreground/30",
-              )}
-            >
-              {f === "ABS_TRANCHE" ? "ABS" : f === "All" ? "All Types" : f.charAt(0) + f.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
-
-        <div className="h-4 w-px bg-border" />
-
         <div className="flex gap-1.5">
           {GRADE_FILTERS.map((f) => (
             <button
@@ -162,8 +133,14 @@ export function BondCatalog() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">No instruments match filters</p>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-52 rounded-xl" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">No bonds match filters</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((bond) => (
