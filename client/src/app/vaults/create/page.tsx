@@ -67,8 +67,8 @@ export default function CreatePortfolioPage() {
   const [minRating, setMinRating] = useState("BB-");
   const [maxRating, setMaxRating] = useState("AA");
   const [targetYieldBps, setTargetYieldBps] = useState(400);
-  const [maxSingleExposurePct, setMaxSingleExposurePct] = useState(15);
-  const [minBonds, setMinBonds] = useState(10);
+  const [maxSingleExposurePct, setMaxSingleExposurePct] = useState(30);
+  const [minBonds, setMinBonds] = useState(4);
   const [maturityPreference, setMaturityPreference] = useState("mixed");
   const [currencyPreference, setCurrencyPreference] = useState("any");
   const [riskTolerance, setRiskTolerance] = useState("moderate");

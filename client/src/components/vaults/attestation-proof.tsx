@@ -1,14 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { explorerAddressUrl } from "@/lib/constants";
+import { explorerAddressUrl, explorerTxUrl } from "@/lib/constants";
 import { formatBytes32, truncateAddress, formatTimestamp } from "@/lib/format";
-import { ShieldCheck, Copy, ExternalLink, CheckCircle2, Lock } from "lucide-react";
+import { ShieldCheck, Copy, ExternalLink, CheckCircle2, Lock, Loader2, ShieldQuestion } from "lucide-react";
 import { toast } from "sonner";
 import type { Hex } from "viem";
-import { VAULT_CONTRACTS } from "@/lib/contracts";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { VAULT_CONTRACTS, zkPortfolioVerifierAbi } from "@/lib/contracts";
 import { useZKProofValid } from "@/hooks/use-contracts";
 
 const RATING_SCALE = [
@@ -35,7 +37,47 @@ export function AttestationProof({
   attestation: AttestationData;
   isValid: boolean;
 }) {
-  const { data: hasZKProof } = useZKProofValid(attestation.portfolioId);
+  const { address } = useAccount();
+  const { data: hasZKProof, refetch: refetchZK } = useZKProofValid(attestation.portfolioId);
+  const { writeContractAsync } = useWriteContract();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [zkTxHash, setZkTxHash] = useState<string | null>(null);
+
+  async function handleVerifyZK() {
+    if (!address) return;
+    setIsVerifying(true);
+    const id = toast.loading("Generating ZK proof...");
+    try {
+      // 1. Agent generates proof (reads private data, runs Noir circuit)
+      const res = await fetch("http://localhost:3001/api/portfolio/verify-zk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portfolioId: attestation.portfolioId }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || `Server returned ${res.status}`);
+      }
+      const data = await res.json();
+
+      // 2. User submits proof on-chain (signs tx from their wallet)
+      toast.loading("Sign transaction to verify proof on-chain...", { id });
+      const txHash = await writeContractAsync({
+        abi: zkPortfolioVerifierAbi,
+        address: VAULT_CONTRACTS.zkPortfolioVerifier,
+        functionName: "verifyAndStore",
+        args: [data.portfolioId as Hex, data.proof as Hex, data.publicInputs as Hex[]],
+      });
+
+      setZkTxHash(txHash);
+      toast.success("ZK proof verified on-chain!", { id });
+      refetchZK();
+    } catch (e: any) {
+      toast.error(e.message?.slice(0, 100) ?? "ZK verification failed", { id });
+    } finally {
+      setIsVerifying(false);
+    }
+  }
 
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
@@ -125,8 +167,40 @@ export function AttestationProof({
           <p className="text-xs text-muted-foreground">
             {hasZKProof
               ? "Portfolio composition verified via Noir ZK proof. Aggregate properties (value, coupon, ratings, diversification) are mathematically proven correct without revealing which bonds are held."
-              : "ZK proof not yet submitted for this portfolio. Composition is currently verified via AI attestation (ECDSA signature)."}
+              : "Independently verify that the AI agent's attestation is correct. A zero-knowledge proof will cryptographically prove the portfolio composition matches the claimed properties — without revealing the bonds."}
           </p>
+
+          {!hasZKProof && (
+            <Button
+              onClick={handleVerifyZK}
+              disabled={isVerifying}
+              className="w-full bg-fideza-lime/90 hover:bg-fideza-lime text-black font-medium"
+            >
+              {isVerifying ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Generating ZK Proof...
+                </>
+              ) : (
+                <>
+                  <ShieldQuestion className="size-4 mr-2" />
+                  Verify with ZK Proof
+                </>
+              )}
+            </Button>
+          )}
+
+          {zkTxHash && (
+            <a
+              href={explorerTxUrl(zkTxHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-emerald-400 hover:underline"
+            >
+              <ExternalLink className="size-3" />
+              ZK Proof TX
+            </a>
+          )}
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Verifier Contract</span>

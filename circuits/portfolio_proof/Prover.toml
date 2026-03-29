@@ -1,12 +1,12 @@
-amounts = ["190000000000000000", "170000000000000000", "150000000000000000", "150000000000000000", "140000000000000000", "100000000000000000", "100000000000000000", "0"]
-weights_bps = ["1900", "1700", "1500", "1500", "1400", "1000", "1000", "0"]
-coupon_rates_bps = ["0", "350", "425", "0", "500", "0", "575", "0"]
-rating_indices = ["3", "6", "8", "5", "9", "5", "10", "0"]
+amounts = ["220000000000000000", "220000000000000000", "180000000000000000", "180000000000000000", "100000000000000000", "100000000000000000", "0", "0"]
+weights_bps = ["2200", "2200", "1800", "1800", "1000", "1000", "0", "0"]
+coupon_rates_bps = ["425", "350", "575", "500", "0", "0", "0", "0"]
+rating_indices = ["8", "6", "10", "9", "3", "5", "0", "0"]
 
 claimed_total_value = "1000000000000000000"
-claimed_weighted_coupon_bps = "250"
-claimed_num_bonds = "7"
+claimed_weighted_coupon_bps = "364"
+claimed_num_bonds = "6"
 claimed_min_rating_index = "10"
 claimed_max_rating_index = "3"
-claimed_max_single_exposure_bps = "1900"
+claimed_max_single_exposure_bps = "2200"
 claimed_diversification_score = "9"
