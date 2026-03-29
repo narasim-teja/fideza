@@ -1,9 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ASSET_TYPE_COLORS } from "@/lib/constants";
-import { ratingColor } from "@/lib/constants";
+import { ASSET_TYPE_COLORS, ratingColor } from "@/lib/constants";
 import { formatBytes32 } from "@/lib/format";
 import { Shield, Lock } from "lucide-react";
 
@@ -24,20 +23,27 @@ export function BondCard({ bond }: { bond: BondInfo }) {
   const rColors = ratingColor(bond.rating);
 
   const riskTier = bond.riskScore >= 80 ? "A" : bond.riskScore >= 60 ? "B" : "C";
-  const riskColors =
+  const riskBarColor =
     riskTier === "A"
-      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+      ? "bg-emerald-400"
       : riskTier === "B"
-        ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/20"
-        : "bg-red-500/15 text-red-400 border-red-500/20";
+        ? "bg-yellow-400"
+        : "bg-red-400";
+  const riskTextColor =
+    riskTier === "A"
+      ? "text-emerald-400"
+      : riskTier === "B"
+        ? "text-yellow-400"
+        : "text-red-400";
 
   return (
-    <Card className="bg-card border-border hover:ring-1 hover:ring-primary/30 transition-all">
-      <CardHeader className="pb-3">
+    <Card className="bg-card border-border hover:ring-1 hover:ring-primary/30 transition-all group">
+      <CardContent className="pt-5 pb-4 space-y-3">
+        {/* Header: type + rating */}
         <div className="flex items-center justify-between">
           <Badge
             variant="outline"
-            className={`${typeColors.bg} ${typeColors.text} ${typeColors.border} text-xs`}
+            className={`${typeColors.bg} ${typeColors.text} ${typeColors.border} text-[10px]`}
           >
             {bond.assetType === "ABS_TRANCHE" ? "ABS Tranche" : bond.assetType.charAt(0) + bond.assetType.slice(1).toLowerCase()}
           </Badge>
@@ -48,40 +54,52 @@ export function BondCard({ bond }: { bond: BondInfo }) {
             {bond.rating}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground truncate mt-1">{bond.issuerCategory}</p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span className="text-muted-foreground">Coupon</span>
-            <p className="font-medium text-fideza-lime">{bond.couponRange}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Maturity</span>
-            <p className="font-medium">{bond.maturityBucket}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Currency</span>
-            <p className="font-medium">{bond.currency}</p>
-          </div>
-          <div>
+
+        {/* Issuer category */}
+        <p className="text-sm font-medium truncate">{bond.issuerCategory}</p>
+
+        {/* Risk bar */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
             <span className="text-muted-foreground">Risk Score</span>
-            <p className={`font-medium`}>
-              <span className={riskColors.split(" ")[1]}>{bond.riskScore}</span>
-              <span className="text-muted-foreground"> ({riskTier})</span>
-            </p>
+            <span className={`font-semibold ${riskTextColor}`}>
+              {bond.riskScore} <span className="text-muted-foreground font-normal">/ 100</span>
+            </span>
+          </div>
+          <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${riskBarColor} transition-all`}
+              style={{ width: `${bond.riskScore}%` }}
+            />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 pt-1 border-t border-border">
+        {/* Details grid */}
+        <div className="grid grid-cols-3 gap-2 text-[11px]">
+          <div>
+            <span className="text-muted-foreground block">Coupon</span>
+            <span className="font-medium text-fideza-lime">{bond.couponRange}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block">Maturity</span>
+            <span className="font-medium">{bond.maturityBucket}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block">Currency</span>
+            <span className="font-medium">{bond.currency}</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 pt-2 border-t border-border">
           {bond.hasCollateral && (
-            <div className="flex items-center gap-1 text-xs text-emerald-400">
-              <Shield className="size-3" />
+            <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+              <Shield className="size-2.5" />
               Collateralized
             </div>
           )}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-            <Lock className="size-3" />
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
+            <Lock className="size-2.5" />
             {formatBytes32(bond.assetId)}
           </div>
         </div>

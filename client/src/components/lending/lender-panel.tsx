@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useDeposit, useWithdraw, useLenderBalance } from "@/hooks/use-contracts";
+import { useDeposit, useWithdraw, useLenderBalance, useLendingPoolStats } from "@/hooks/use-contracts";
 import { useAccount, useBalance } from "wagmi";
 import { parseEther } from "viem";
 import { formatWei } from "@/lib/format";
 import { toast } from "sonner";
-import { Wallet, ArrowDownToLine, ArrowUpFromLine, Loader2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet, TrendingUp } from "lucide-react";
 
 export function LenderPanel() {
   const { address } = useAccount();
   const { data: walletBalance } = useBalance({ address });
   const { data: lenderBalance } = useLenderBalance(address);
+  const { data: poolData } = useLendingPoolStats();
   const { depositAsync } = useDeposit();
   const { withdrawAsync } = useWithdraw();
 
@@ -23,6 +24,17 @@ export function LenderPanel() {
   const [withdrawInput, setWithdrawInput] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  const zero = BigInt(0);
+  const utilizationBps = poolData ? (poolData as [bigint, bigint, bigint, bigint])[3] : zero;
+  const effectiveAPY = (10 * Number(utilizationBps)) / 10000;
+
+  const deposited = lenderBalance ? lenderBalance as bigint : zero;
+  const walletBal = walletBalance?.value ?? zero;
+
+  // Projected yearly earnings based on deposited amount
+  const depositedNum = Number(deposited) / 1e18;
+  const projectedYearly = depositedNum * (effectiveAPY / 100);
 
   async function handleDeposit() {
     if (!depositInput) return;
@@ -57,14 +69,12 @@ export function LenderPanel() {
   if (!address) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="size-4" />
-            Lender
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Connect wallet to deposit</p>
+        <CardContent className="pt-6 pb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Wallet className="size-4 text-fideza-lavender" />
+            <span className="text-sm font-medium">Lender</span>
+          </div>
+          <p className="text-sm text-muted-foreground">Connect wallet to start earning yield.</p>
         </CardContent>
       </Card>
     );
@@ -72,29 +82,49 @@ export function LenderPanel() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Wallet className="size-4 text-fideza-lavender" />
-          Lender
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-xs text-muted-foreground">Wallet Balance</span>
-            <p className="font-semibold">{walletBalance ? formatWei(walletBalance.value) : "0"} USDr</p>
+      <CardContent className="pt-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet className="size-4 text-fideza-lavender" />
+            <span className="text-sm font-medium">Lender</span>
           </div>
-          <div>
-            <span className="text-xs text-muted-foreground">Deposited</span>
-            <p className="font-semibold text-fideza-lime">{lenderBalance ? formatWei(lenderBalance) : "0"} USDr</p>
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <TrendingUp className="size-3 text-fideza-lime" />
+            <span className="text-fideza-lime font-medium">{effectiveAPY.toFixed(2)}% APY</span>
           </div>
+        </div>
+
+        {/* Balances */}
+        <div className="rounded-lg bg-muted/20 p-3 space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Wallet Balance</span>
+            <span className="font-medium">{formatWei(walletBal)} USDr</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Deposited</span>
+            <span className="font-medium text-fideza-lime">{formatWei(deposited)} USDr</span>
+          </div>
+          {projectedYearly > 0 && (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Projected Yearly</span>
+              <span className="font-medium text-fideza-lime">+{projectedYearly.toFixed(2)} USDr</span>
+            </div>
+          )}
         </div>
 
         <Separator />
 
         {/* Deposit */}
-        <div className="space-y-2">
-          <label className="text-xs text-muted-foreground">Deposit USDr</label>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-muted-foreground">Deposit USDr</label>
+            <button
+              onClick={() => setDepositInput(walletBalance ? (Number(walletBalance.value) / 1e18).toString() : "")}
+              className="text-[10px] text-fideza-lavender hover:underline"
+            >
+              Max
+            </button>
+          </div>
           <div className="flex gap-2">
             <Input
               type="text"
@@ -106,7 +136,7 @@ export function LenderPanel() {
             <Button
               onClick={handleDeposit}
               disabled={isDepositing || !depositInput}
-              className="shrink-0"
+              className="shrink-0 bg-fideza-lavender hover:bg-fideza-lavender/90 text-black"
             >
               {isDepositing ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -118,8 +148,16 @@ export function LenderPanel() {
         </div>
 
         {/* Withdraw */}
-        <div className="space-y-2">
-          <label className="text-xs text-muted-foreground">Withdraw USDr</label>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-muted-foreground">Withdraw USDr</label>
+            <button
+              onClick={() => setWithdrawInput(deposited ? (Number(deposited) / 1e18).toString() : "")}
+              className="text-[10px] text-fideza-lavender hover:underline"
+            >
+              Max
+            </button>
+          </div>
           <div className="flex gap-2">
             <Input
               type="text"
@@ -142,10 +180,6 @@ export function LenderPanel() {
             </Button>
           </div>
         </div>
-
-        <p className="text-xs text-muted-foreground">
-          Earn 10% APY on deposited USDr. Funds are used by borrowers who collateralize with AI-constructed portfolio vault shares.
-        </p>
       </CardContent>
     </Card>
   );

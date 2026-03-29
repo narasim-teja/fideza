@@ -58,171 +58,174 @@ contract DeployPhase8 is Script {
     }
 
     function _registerAllBonds(BondCatalog catalog) internal {
-        // #1: BOND-2026-ENERGY-A1 — BB+, Energy
+        // Rating-risk correlation: AAA=95+, AA=85-95, A=75-85, BBB=60-75, BB=45-60, B=30-45
+        // Coupon inversely correlates: better rating = lower coupon (less risk premium)
+
+        // #1: BOND-2026-ENERGY-A1 - BB+, Energy (High Yield)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("BOND-2026-ENERGY-A1")),
             assetType: "BOND",
             rating: "BB+",
-            couponRange: "3-6%",
+            couponRange: "7-9%",
             maturityBucket: "5-10 years",
             currency: "USD",
             issuerCategory: "BR Energy/Utilities, High Yield",
             hasCollateral: false,
-            riskScore: 45
+            riskScore: 55
         }));
         console.log("    Registered: BOND-2026-ENERGY-A1");
 
-        // #2: INV-2026-00847 — BBB+, Construction
+        // #2: INV-2026-00847 - BBB+, Construction (Investment Grade invoice)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("INV-2026-00847")),
             assetType: "INVOICE",
             rating: "BBB+",
-            couponRange: "0-3%",
+            couponRange: "1-2%",
             maturityBucket: "0-2 years",
             currency: "BRL",
             issuerCategory: "BR Construction, Investment Grade",
             hasCollateral: false,
-            riskScore: 30
+            riskScore: 72
         }));
         console.log("    Registered: INV-2026-00847");
 
-        // #3: ABS-2026-AUTO-001 — A, Auto Loans
+        // #3: ABS-2026-AUTO-001 - A, Auto Loans (Investment Grade, collateralized)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("ABS-2026-AUTO-001")),
             assetType: "ABS_TRANCHE",
             rating: "A",
-            couponRange: "0-3%",
+            couponRange: "3-4%",
             maturityBucket: "2-5 years",
             currency: "BRL",
             issuerCategory: "BR Auto Loans, Investment Grade",
             hasCollateral: true,
-            riskScore: 25
+            riskScore: 82
         }));
         console.log("    Registered: ABS-2026-AUTO-001");
 
-        // #4: BOND-2026-TELCO-B1 — BBB, Telecom
+        // #4: BOND-2026-TELCO-B1 - BBB, Telecom (Low Investment Grade)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("BOND-2026-TELCO-B1")),
             assetType: "BOND",
             rating: "BBB",
-            couponRange: "3-6%",
+            couponRange: "5-6%",
             maturityBucket: "2-5 years",
             currency: "USD",
             issuerCategory: "BR Telecom, Investment Grade",
             hasCollateral: false,
-            riskScore: 35
+            riskScore: 68
         }));
         console.log("    Registered: BOND-2026-TELCO-B1");
 
-        // #5: BOND-2026-INFRA-C1 — A-, Infrastructure
+        // #5: BOND-2026-INFRA-C1 - A-, Infrastructure (Solid IG, collateralized)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("BOND-2026-INFRA-C1")),
             assetType: "BOND",
             rating: "A-",
-            couponRange: "3-6%",
+            couponRange: "4-5%",
             maturityBucket: "5-10 years",
             currency: "BRL",
             issuerCategory: "BR Infrastructure, Investment Grade",
             hasCollateral: true,
-            riskScore: 25
+            riskScore: 80
         }));
         console.log("    Registered: BOND-2026-INFRA-C1");
 
-        // #6: INV-2026-01122 — BBB, Agriculture
+        // #6: INV-2026-01122 - BBB, Agriculture (IG invoice)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("INV-2026-01122")),
             assetType: "INVOICE",
             rating: "BBB",
-            couponRange: "0-3%",
+            couponRange: "2-3%",
             maturityBucket: "0-2 years",
             currency: "BRL",
             issuerCategory: "BR Agriculture, Investment Grade",
             hasCollateral: false,
-            riskScore: 35
+            riskScore: 65
         }));
         console.log("    Registered: INV-2026-01122");
 
-        // #7: ABS-2026-MORT-001 — AA-, Mortgages
+        // #7: ABS-2026-MORT-001 - AA-, Mortgages (High IG, collateralized, safe)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("ABS-2026-MORT-001")),
             assetType: "ABS_TRANCHE",
             rating: "AA-",
-            couponRange: "0-3%",
+            couponRange: "2-3%",
             maturityBucket: "5-10 years",
             currency: "BRL",
             issuerCategory: "BR Mortgages, Investment Grade",
             hasCollateral: true,
-            riskScore: 12
+            riskScore: 90
         }));
         console.log("    Registered: ABS-2026-MORT-001");
 
-        // #8: BOND-2026-BANK-D1 — BB, Banking
+        // #8: BOND-2026-BANK-D1 - BB, Banking (High Yield)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("BOND-2026-BANK-D1")),
             assetType: "BOND",
             rating: "BB",
-            couponRange: "6-10%",
+            couponRange: "8-10%",
             maturityBucket: "2-5 years",
             currency: "USD",
             issuerCategory: "BR Banking, High Yield",
             hasCollateral: false,
-            riskScore: 50
+            riskScore: 48
         }));
         console.log("    Registered: BOND-2026-BANK-D1");
 
-        // #9: INV-2026-01455 — A, Technology
+        // #9: INV-2026-01455 - A, Technology (Strong IG invoice)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("INV-2026-01455")),
             assetType: "INVOICE",
             rating: "A",
-            couponRange: "0-3%",
+            couponRange: "1-2%",
             maturityBucket: "0-2 years",
             currency: "BRL",
             issuerCategory: "BR Technology, Investment Grade",
             hasCollateral: false,
-            riskScore: 20
+            riskScore: 85
         }));
         console.log("    Registered: INV-2026-01455");
 
-        // #10: ABS-2026-CREDIT-001 — BBB+, Consumer Credit
+        // #10: ABS-2026-CREDIT-001 - BBB+, Consumer Credit (IG, collateralized)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("ABS-2026-CREDIT-001")),
             assetType: "ABS_TRANCHE",
             rating: "BBB+",
-            couponRange: "0-3%",
+            couponRange: "4-5%",
             maturityBucket: "2-5 years",
             currency: "BRL",
             issuerCategory: "BR Consumer Credit, Investment Grade",
             hasCollateral: true,
-            riskScore: 30
+            riskScore: 70
         }));
         console.log("    Registered: ABS-2026-CREDIT-001");
 
-        // #11: BOND-2026-MINING-E1 — B+, Mining
+        // #11: BOND-2026-MINING-E1 - B+, Mining (Deep High Yield)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("BOND-2026-MINING-E1")),
             assetType: "BOND",
             rating: "B+",
-            couponRange: "6-10%",
+            couponRange: "9-12%",
             maturityBucket: "5-10 years",
             currency: "USD",
             issuerCategory: "BR Mining, High Yield",
             hasCollateral: true,
-            riskScore: 60
+            riskScore: 38
         }));
         console.log("    Registered: BOND-2026-MINING-E1");
 
-        // #12: BOND-2026-RETAIL-F1 — BBB-, Retail
+        // #12: BOND-2026-RETAIL-F1 - BBB-, Retail (Borderline IG)
         catalog.registerBond(BondCatalog.PublicBondInfo({
             assetId: keccak256(bytes("BOND-2026-RETAIL-F1")),
             assetType: "BOND",
             rating: "BBB-",
-            couponRange: "3-6%",
+            couponRange: "5-7%",
             maturityBucket: "2-5 years",
             currency: "BRL",
             issuerCategory: "BR Retail, Investment Grade",
             hasCollateral: false,
-            riskScore: 40
+            riskScore: 62
         }));
         console.log("    Registered: BOND-2026-RETAIL-F1");
     }

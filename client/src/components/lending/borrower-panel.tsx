@@ -1,10 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useNextLoanId } from "@/hooks/use-contracts";
 import { LoanCard } from "./loan-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText } from "lucide-react";
+import { FileText, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function BorrowerPanel() {
   const { data: nextLoanId, isLoading } = useNextLoanId();
@@ -14,16 +15,14 @@ export function BorrowerPanel() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="size-4" />
-            Active Loans
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="size-4 text-fideza-lavender" />
+            <span className="text-sm font-medium">Active Loans</span>
+          </div>
           <div className="space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
-              <Skeleton key={i} className="h-40 rounded-xl" />
+              <Skeleton key={i} className="h-32 rounded-xl" />
             ))}
           </div>
         </CardContent>
@@ -33,17 +32,29 @@ export function BorrowerPanel() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-2 mb-4">
           <FileText className="size-4 text-fideza-lavender" />
-          Active Loans
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+          <span className="text-sm font-medium">Active Loans</span>
+          {loanCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-fideza-lavender/15 text-fideza-lavender ml-auto">
+              {loanCount}
+            </span>
+          )}
+        </div>
+
         {loanCount === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No loans yet. Borrow USDr against your vault shares from a portfolio detail page.
-          </p>
+          <div className="rounded-lg border border-dashed border-border p-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              No active loans. Create a vault portfolio first, then borrow against it.
+            </p>
+            <Link
+              href="/vaults"
+              className="inline-flex items-center gap-1.5 text-xs text-fideza-lavender hover:underline font-medium"
+            >
+              Go to Vaults <ArrowRight className="size-3" />
+            </Link>
+          </div>
         ) : (
           <div className="space-y-3">
             {Array.from({ length: loanCount }).map((_, i) => (
