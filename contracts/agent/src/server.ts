@@ -21,6 +21,7 @@ import { optimizePortfolio } from "./portfolio/optimizer";
 import { constructPortfolio } from "./portfolio/vaultConstructor";
 import { attestPortfolio } from "./portfolio/attestor";
 import { bridgePortfolioShares } from "./portfolio/bridger";
+import { proveFromPortfolio } from "./portfolio/zkProver";
 import {
   registerInstitution,
   getInstitutionStatus,
@@ -77,11 +78,25 @@ async function handlePortfolioRequest(constraintsJson: Record<string, unknown>, 
   const attestation = await attestPortfolio(portfolio, portfolioId, bonds, wallet);
   const bridgeResult = await bridgePortfolioShares(shareTokenAddress, attestation, wallet, recipientAddress);
 
+  // ZK proof — only possible when ≤8 bonds (Noir circuit constraint)
+  let zkProofTxHash: string | undefined;
+  if (portfolio.allocations.length <= 8) {
+    try {
+      console.log("  [ZK_PROVE] Generating ZK composition proof...");
+      zkProofTxHash = await proveFromPortfolio(portfolioId, portfolio);
+    } catch (e: any) {
+      console.log(`  [ZK_PROVE] Failed (non-fatal): ${e.message?.slice(0, 100)}`);
+    }
+  } else {
+    console.log(`  [ZK_PROVE] Skipped — ${portfolio.allocations.length} bonds exceeds circuit max of 8`);
+  }
+
   return {
     portfolioId, shareTokenAddress, createTxHash: txHash,
     attestationTxHash: bridgeResult.attestationTxHash,
     bridgeTxHash: bridgeResult.bridgeTxHash,
     transferToUserTxHash: bridgeResult.transferToUserTxHash,
+    zkProofTxHash,
     numBonds: attestation.numBonds,
     diversificationScore: attestation.diversificationScore,
     weightedCouponBps: attestation.weightedCouponBps,

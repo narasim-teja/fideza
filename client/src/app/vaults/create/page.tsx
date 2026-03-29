@@ -37,7 +37,7 @@ const RATING_OPTIONS = [
 ];
 
 const PIPELINE_STAGES = [
-  { key: "SIGN", label: "Sign Transaction", desc: "Deposit USDr to lending pool" },
+  { key: "SIGN", label: "Sign Transaction", desc: "Deposit USDr" },
   { key: "PARSE", label: "Parse Constraints", desc: "Validate investment parameters" },
   { key: "SCAN", label: "Scan Bonds", desc: "Read rated instruments from registry" },
   { key: "OPTIMIZE", label: "AI Optimization", desc: "LLM constructs optimal allocation" },

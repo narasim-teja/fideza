@@ -125,13 +125,27 @@ export async function bridgePortfolioShares(
   console.log(`  Recipient: ${recipient}`);
 
   try {
-    const bridgeTx = await bridgePrep.bridgeShareToken.teleportToPublicChain(
-      recipient,
-      bridgePrep.balance,
-      publicChainId,
-      { type: 0 },
-    );
-    const bridgeReceipt = await bridgeTx.wait();
+    // Retry teleport up to 3 times — token registration may need a few seconds to propagate
+    let bridgeReceipt: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        if (attempt > 1) {
+          console.log(`  Retry ${attempt}/3 — waiting for token registration...`);
+          await new Promise((r) => setTimeout(r, 5000));
+        }
+        const bridgeTx = await bridgePrep.bridgeShareToken.teleportToPublicChain(
+          recipient,
+          bridgePrep.balance,
+          publicChainId,
+          { type: 0 },
+        );
+        bridgeReceipt = await bridgeTx.wait();
+        break;
+      } catch (e: any) {
+        if (attempt === 3) throw e;
+        console.log(`  Teleport attempt ${attempt} failed, retrying...`);
+      }
+    }
     console.log(`  Bridge initiated: TX ${bridgeReceipt.hash}`);
     console.log(`  Privacy Node explorer: https://blockscout-privacy-node-1.rayls.com/tx/${bridgeReceipt.hash}`);
     console.log("  Note: Mirror tokens will appear on public chain in ~30-60 seconds (relay)");

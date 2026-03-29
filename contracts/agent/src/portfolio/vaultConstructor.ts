@@ -77,8 +77,8 @@ export async function constructPortfolio(
   );
   console.log(`  VaultShareToken deployed: ${shareTokenAddress}`);
 
-  // 5. Register via Rayls API (fire-and-forget — non-critical)
-  registerTokenViaAPI(shareTokenAddress, portfolioId).catch(() => {});
+  // 5. Register via Rayls API (must complete before bridge teleport)
+  await registerTokenViaAPI(shareTokenAddress, portfolioId);
 
   return {
     portfolioId,
