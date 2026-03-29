@@ -1,0 +1,6 @@
+[package]
+name = "portfolio_proof"
+type = "bin"
+authors = ["Fideza"]
+
+[dependencies]

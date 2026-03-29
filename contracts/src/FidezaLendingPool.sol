@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.27;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -49,6 +49,12 @@ contract FidezaLendingPool is Ownable {
     // -- Constructor -------------------------------------------------------------
 
     constructor(address _verifier) Ownable(msg.sender) {
+        require(_verifier != address(0), "Invalid verifier");
+        verifier = IPortfolioVerifier(_verifier);
+    }
+
+    /// @notice Swap the portfolio verifier (e.g. AI → ZK). Owner only.
+    function setVerifier(address _verifier) external onlyOwner {
         require(_verifier != address(0), "Invalid verifier");
         verifier = IPortfolioVerifier(_verifier);
     }

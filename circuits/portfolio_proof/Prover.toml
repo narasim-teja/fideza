@@ -1,0 +1,28 @@
+# Demo: 5-bond diversified portfolio
+# Bond 1: 2500 BPS weight, A+ rated (idx 4), 5% coupon
+# Bond 2: 2000 BPS weight, A  rated (idx 5), 6% coupon
+# Bond 3: 2000 BPS weight, A- rated (idx 6), 7% coupon
+# Bond 4: 1500 BPS weight, BBB+ rated (idx 7), 8% coupon
+# Bond 5: 2000 BPS weight, A  rated (idx 5), 5.5% coupon
+
+# Private inputs
+amounts = ["250000", "200000", "200000", "150000", "200000", "0", "0", "0"]
+weights_bps = ["2500", "2000", "2000", "1500", "2000", "0", "0", "0"]
+coupon_rates_bps = ["500", "600", "700", "800", "550", "0", "0", "0"]
+rating_indices = ["4", "5", "6", "7", "5", "0", "0", "0"]
+
+# Public inputs
+# total = 250000 + 200000 + 200000 + 150000 + 200000 = 1000000
+claimed_total_value = "1000000"
+# weighted_coupon = (2500*500 + 2000*600 + 2000*700 + 1500*800 + 2000*550) / 10000
+#                 = (1250000 + 1200000 + 1400000 + 1200000 + 1100000) / 10000
+#                 = 6150000 / 10000 = 615
+claimed_weighted_coupon_bps = "615"
+claimed_num_bonds = "5"
+claimed_min_rating_index = "7"    # worst = BBB+ (index 7)
+claimed_max_rating_index = "4"    # best  = A+   (index 4)
+claimed_max_single_exposure_bps = "2500"  # bond 1 has largest weight
+# HHI = (2500^2 + 2000^2 + 2000^2 + 1500^2 + 2000^2) / 10000^2
+#      = (6250000 + 4000000 + 4000000 + 2250000 + 4000000) = 20500000
+#      floor(20500000 / 10000000) = 2, score = 10 - 2 = 8
+claimed_diversification_score = "8"

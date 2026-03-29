@@ -70,6 +70,9 @@ export const config = {
   aiAttestationVerifierAddress: opt("AI_ATTESTATION_VERIFIER_ADDRESS", "0x"),
   fidezaLendingPoolAddress: opt("FIDEZA_LENDING_POOL_ADDRESS", "0x"),
 
+  // Phase 11: ZK Verifier
+  zkPortfolioVerifierAddress: opt("ZK_PORTFOLIO_VERIFIER_ADDRESS", "0x"),
+
   // AI provider settings
   aiProvider: (opt("AI_PROVIDER", "openrouter")) as
     | "anthropic"
