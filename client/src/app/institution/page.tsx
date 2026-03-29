@@ -16,9 +16,9 @@ import {
   XCircle,
   Zap,
   Shield,
-  TrendingUp,
-  BarChart3,
 } from "lucide-react";
+
+import { IssuanceResults } from "@/components/institution/issuance-results";
 
 const AGENT_URL = "http://localhost:3001";
 
@@ -80,8 +80,13 @@ export default function InstitutionPage() {
   const [couponBps, setCouponBps] = useState(500);
   const [currency, setCurrency] = useState("USD");
   const [seniority, setSeniority] = useState("Senior Unsecured");
-  const [collateral, setCollateral] = useState("None");
+  const [collateral] = useState("None");
   const [totalSupply, setTotalSupply] = useState("10000");
+  const [maturityDate, setMaturityDate] = useState("");
+  const [issueDate, setIssueDate] = useState("");
+  const [faceValue, setFaceValue] = useState("1000");
+  const [paymentFrequency, setPaymentFrequency] = useState("Semi-Annual");
+  const [minInvestment, setMinInvestment] = useState("10000");
   const [isIssuing, setIsIssuing] = useState(false);
   const [issueStage, setIssueStage] = useState(-1);
   const [issueResult, setIssueResult] = useState<IssuanceResult | null>(null);
@@ -269,19 +274,43 @@ export default function InstitutionPage() {
                   <div>
                     <label className="text-[11px] text-muted-foreground mb-1.5 block">Asset Type</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {(["bond", "invoice", "abs"] as const).map((t) => (
-                        <button
+                      <button
+                        onClick={() => {
+                          if (assetType === "bond") {
+                            setBondName("BOND-2026-001");
+                            setIssuerName("Fideza Capital Partners");
+                            setIssuerSector("Energy");
+                            setIssueDate("2026-04-01");
+                            setMaturityDate("2031-04-01");
+                            setCouponBps(525);
+                            setPaymentFrequency("Semi-Annual");
+                            setCurrency("USD");
+                            setFaceValue("1000");
+                            setTotalSupply("50000");
+                            setMinInvestment("25000");
+                          } else {
+                            setAssetType("bond");
+                          }
+                        }}
+                        disabled={isIssuing}
+                        className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
+                          assetType === "bond"
+                            ? "border-fideza-lavender bg-fideza-lavender/10 text-fideza-lavender"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Bond
+                      </button>
+                      {(["Invoice", "ABS"] as const).map((t) => (
+                        <div
                           key={t}
-                          onClick={() => setAssetType(t)}
-                          disabled={isIssuing}
-                          className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
-                            assetType === t
-                              ? "border-fideza-lavender bg-fideza-lavender/10 text-fideza-lavender"
-                              : "border-border text-muted-foreground hover:text-foreground"
-                          }`}
+                          className="relative py-2 px-3 rounded-md text-sm font-medium border border-border text-muted-foreground/40 text-center cursor-not-allowed"
                         >
-                          {t === "abs" ? "ABS" : t.charAt(0).toUpperCase() + t.slice(1)}
-                        </button>
+                          {t}
+                          <span className="absolute -top-2 right-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-fideza-lavender/15 text-fideza-lavender font-medium">
+                            Soon
+                          </span>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -289,8 +318,8 @@ export default function InstitutionPage() {
                   <Separator />
 
                   <div>
-                    <label className="text-[11px] text-muted-foreground mb-1 block">Asset ID</label>
-                    <Input value={bondName} onChange={(e) => setBondName(e.target.value)} placeholder={`${assetType.toUpperCase()}-2026-001`} disabled={isIssuing} />
+                    <label className="text-[11px] text-muted-foreground mb-1 block">Bond ID</label>
+                    <Input value={bondName} onChange={(e) => setBondName(e.target.value)} placeholder="BOND-2026-001" disabled={isIssuing} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -308,28 +337,49 @@ export default function InstitutionPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] text-muted-foreground mb-1 block">{assetType === "abs" ? "Credit Enhancement (bps)" : "Coupon Rate (bps)"}</label>
+                      <label className="text-[11px] text-muted-foreground mb-1 block">Issue Date</label>
+                      <Input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} disabled={isIssuing} />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-muted-foreground mb-1 block">Maturity Date</label>
+                      <Input type="date" value={maturityDate} onChange={(e) => setMaturityDate(e.target.value)} disabled={isIssuing} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] text-muted-foreground mb-1 block">Coupon Rate (bps)</label>
                       <Input type="number" value={couponBps} onChange={(e) => setCouponBps(Number(e.target.value))} disabled={isIssuing} />
                     </div>
                     <div>
-                      <label className="text-[11px] text-muted-foreground mb-1 block">Currency</label>
-                      <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={selectClass} disabled={isIssuing}>
-                        {["USD", "BRL"].map((c) => <option key={c} value={c}>{c}</option>)}
+                      <label className="text-[11px] text-muted-foreground mb-1 block">Payment Frequency</label>
+                      <select value={paymentFrequency} onChange={(e) => setPaymentFrequency(e.target.value)} className={selectClass} disabled={isIssuing}>
+                        {["Monthly", "Quarterly", "Semi-Annual", "Annual"].map((f) => <option key={f} value={f}>{f}</option>)}
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] text-muted-foreground mb-1 block">Seniority</label>
-                      <select value={seniority} onChange={(e) => setSeniority(e.target.value)} className={selectClass} disabled={isIssuing}>
-                        {["Senior Secured", "Senior Unsecured", "Subordinated", "Junior"].map((s) => <option key={s} value={s}>{s}</option>)}
+                      <label className="text-[11px] text-muted-foreground mb-1 block">Currency</label>
+                      <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={selectClass} disabled={isIssuing}>
+                        {["USD", "BRL", "EUR"].map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="text-[11px] text-muted-foreground mb-1 block">Total Supply</label>
-                      <Input type="number" value={totalSupply} onChange={(e) => setTotalSupply(e.target.value)} disabled={isIssuing} />
+                      <label className="text-[11px] text-muted-foreground mb-1 block">Face Value (per unit)</label>
+                      <Input type="number" value={faceValue} onChange={(e) => setFaceValue(e.target.value)} disabled={isIssuing} />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-muted-foreground mb-1 block">Total Supply</label>
+                    <Input type="number" value={totalSupply} onChange={(e) => setTotalSupply(e.target.value)} disabled={isIssuing} />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-muted-foreground mb-1 block">Min. Investment</label>
+                    <Input type="number" value={minInvestment} onChange={(e) => setMinInvestment(e.target.value)} disabled={isIssuing} />
                   </div>
                 </CardContent>
               </Card>
@@ -340,11 +390,11 @@ export default function InstitutionPage() {
                 className="w-full h-12 bg-fideza-lavender hover:bg-fideza-lavender/90 text-black font-semibold text-base"
               >
                 {isIssuing ? (
-                  <><Loader2 className="size-4 mr-2 animate-spin" /> Issuing Asset...</>
+                  <><Loader2 className="size-4 mr-2 animate-spin" /> Issuing Bond...</>
                 ) : instStatus?.status !== "APPROVED" ? (
                   "Institution Must Be Approved First"
                 ) : (
-                  <><Zap className="size-4 mr-2" /> Issue {assetType.toUpperCase()}</>
+                  <><Zap className="size-4 mr-2" /> Issue Bond</>
                 )}
               </Button>
             </div>
@@ -389,134 +439,7 @@ export default function InstitutionPage() {
                 </CardContent>
               </Card>
 
-              {issueResult && (
-                <div className="space-y-4">
-                  {/* Header + Rating Summary */}
-                  <Card className="border-emerald-500/20 bg-emerald-500/2">
-                    <CardContent className="pt-6 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="size-5 text-emerald-400" />
-                        <span className="font-semibold">AI Compliance Analysis Complete</span>
-                        <Badge className={`ml-auto text-sm font-bold ${issueResult.recommendation === "APPROVE" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
-                          {issueResult.recommendation}
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-4 gap-3">
-                        <div className="rounded-lg bg-background p-3 text-center">
-                          <Shield className="size-3.5 text-fideza-lavender mx-auto mb-1" />
-                          <p className="text-xl font-bold text-fideza-lavender">{issueResult.rating}</p>
-                          <span className="text-[10px] text-muted-foreground">Credit Rating</span>
-                        </div>
-                        <div className="rounded-lg bg-background p-3 text-center">
-                          <TrendingUp className="size-3.5 text-fideza-lime mx-auto mb-1" />
-                          <p className="text-xl font-bold text-fideza-lime">{issueResult.riskScore}/100</p>
-                          <span className="text-[10px] text-muted-foreground">Risk Score</span>
-                        </div>
-                        <div className="rounded-lg bg-background p-3 text-center">
-                          <BarChart3 className="size-3.5 text-blue-400 mx-auto mb-1" />
-                          <p className="text-xl font-bold">Tier {issueResult.riskTier}</p>
-                          <span className="text-[10px] text-muted-foreground">Risk Tier</span>
-                        </div>
-                        <div className="rounded-lg bg-background p-3 text-center">
-                          <FileCheck className="size-3.5 text-emerald-400 mx-auto mb-1" />
-                          <p className="text-xl font-bold">{issueResult.numChecks}</p>
-                          <span className="text-[10px] text-muted-foreground">Checks Run</span>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">{issueResult.recommendationRationale}</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Compliance Checks Detail */}
-                  <Card>
-                    <CardContent className="pt-6 space-y-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Shield className="size-4 text-fideza-lavender" />
-                        <span className="text-sm font-medium">Compliance Checks</span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {issueResult.checks.filter((c) => c.result === "PASS").length}/{issueResult.checks.length} passed
-                        </span>
-                      </div>
-                      {issueResult.checks.map((check) => (
-                        <div key={check.checkId} className={`p-3 rounded-lg border ${check.result === "PASS" ? "border-emerald-500/20 bg-emerald-500/5" : check.result === "FAIL" ? "border-red-500/20 bg-red-500/5" : "border-yellow-500/20 bg-yellow-500/5"}`}>
-                          <div className="flex items-center gap-2 mb-1">
-                            {check.result === "PASS" ? <CheckCircle2 className="size-3.5 text-emerald-400" /> : check.result === "FAIL" ? <XCircle className="size-3.5 text-red-400" /> : <Loader2 className="size-3.5 text-yellow-400" />}
-                            <span className="text-xs font-medium">{check.checkName}</span>
-                            <Badge variant="outline" className="ml-auto text-[9px] py-0">{check.method === "llm" ? "AI" : "Rules"}</Badge>
-                            <Badge variant="outline" className="text-[9px] py-0">{check.severity}</Badge>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground pl-5">{check.rationale}</p>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-
-                  {/* Disclosure Policy */}
-                  <Card>
-                    <CardContent className="pt-6 space-y-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Shield className="size-4 text-fideza-lavender" />
-                        <span className="text-sm font-medium">Privacy-Preserving Disclosure</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="rounded-lg border border-emerald-500/20 p-3">
-                          <span className="text-[10px] font-medium text-emerald-400 block mb-2">Public ({issueResult.disclosure.disclosed.length})</span>
-                          {issueResult.disclosure.disclosed.map((f) => (
-                            <span key={f} className="inline-block text-[10px] bg-emerald-500/10 text-emerald-400 rounded px-1.5 py-0.5 mr-1 mb-1">{f}</span>
-                          ))}
-                        </div>
-                        <div className="rounded-lg border border-yellow-500/20 p-3">
-                          <span className="text-[10px] font-medium text-yellow-400 block mb-2">Bucketed ({issueResult.disclosure.bucketed.length})</span>
-                          {issueResult.disclosure.bucketed.map((f) => (
-                            <span key={f} className="inline-block text-[10px] bg-yellow-500/10 text-yellow-400 rounded px-1.5 py-0.5 mr-1 mb-1">{f}</span>
-                          ))}
-                        </div>
-                        <div className="rounded-lg border border-red-500/20 p-3">
-                          <span className="text-[10px] font-medium text-red-400 block mb-2">Withheld ({issueResult.disclosure.withheld.length})</span>
-                          {issueResult.disclosure.withheld.map((f) => (
-                            <span key={f} className="inline-block text-[10px] bg-red-500/10 text-red-400 rounded px-1.5 py-0.5 mr-1 mb-1">{f}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* On-Chain Details */}
-                  <Card>
-                    <CardContent className="pt-6 space-y-2">
-                      <span className="text-sm font-medium">On-Chain Details</span>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Token Address</span>
-                          <span className="font-mono text-xs">{issueResult.tokenAddress.slice(0, 14)}...</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Asset ID</span>
-                          <span className="font-mono text-xs">{issueResult.assetId.slice(0, 14)}...</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Deploy TX</span>
-                          <span className="font-mono text-xs">{issueResult.deployTxHash.slice(0, 14)}...</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Attestation</span>
-                          <span className="font-mono text-xs">{issueResult.attestationTxHash.slice(0, 14)}...</span>
-                        </div>
-                      </div>
-                      {issueResult.riskFactors.length > 0 && (
-                        <div className="pt-2">
-                          <span className="text-xs text-muted-foreground">Risk Factors: </span>
-                          {issueResult.riskFactors.map((f) => (
-                            <Badge key={f} variant="outline" className="text-[10px] mr-1 text-yellow-400 border-yellow-500/30">{f}</Badge>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              {issueResult && <IssuanceResults result={issueResult} />}
             </div>
           </div>
         </TabsContent>

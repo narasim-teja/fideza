@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { RegisterWizard } from "@/components/admin/register-wizard";
 import {
   Shield,
   Building2,
@@ -46,11 +45,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showRegForm, setShowRegForm] = useState(false);
-  const [regName, setRegName] = useState("");
-  const [regNumber, setRegNumber] = useState("");
-  const [regJurisdiction, setRegJurisdiction] = useState("BR");
-  const [regType, setRegType] = useState("Investment Bank");
-  const [registering, setRegistering] = useState(false);
 
   const loadInstitutions = useCallback(async () => {
     try {
@@ -134,77 +128,21 @@ export default function AdminPage() {
       </div>
 
       {/* Register New Institution */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Plus className="size-4 text-fideza-lavender" />
-              <span className="text-sm font-medium">Register New Institution</span>
-            </div>
-            {!showRegForm && (
-              <Button size="sm" variant="outline" onClick={() => setShowRegForm(true)}>
-                <Plus className="size-3.5 mr-1" /> Add Institution
-              </Button>
-            )}
-          </div>
-
-          {showRegForm && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] text-muted-foreground mb-1 block">Institution Name</label>
-                  <Input value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="Acme Capital Partners" disabled={registering} />
-                </div>
-                <div>
-                  <label className="text-[11px] text-muted-foreground mb-1 block">Registration Number</label>
-                  <Input value={regNumber} onChange={(e) => setRegNumber(e.target.value)} placeholder="CNPJ-00.000.000/0001-00" disabled={registering} />
-                </div>
-                <div>
-                  <label className="text-[11px] text-muted-foreground mb-1 block">Jurisdiction</label>
-                  <select value={regJurisdiction} onChange={(e) => setRegJurisdiction(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" disabled={registering}>
-                    {["BR", "US", "UK", "EU", "SG"].map((j) => <option key={j} value={j}>{j}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] text-muted-foreground mb-1 block">Business Type</label>
-                  <select value={regType} onChange={(e) => setRegType(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" disabled={registering}>
-                    {["Investment Bank", "Asset Manager", "Insurance", "Pension Fund", "Corporate"].map((b) => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  className="bg-fideza-lavender hover:bg-fideza-lavender/90 text-black font-semibold"
-                  disabled={registering || !regName}
-                  onClick={async () => {
-                    setRegistering(true);
-                    const toastId = toast.loading("Registering institution on-chain...");
-                    try {
-                      const res = await fetch(`${AGENT_URL}/api/institution/register`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ name: regName, registrationNumber: regNumber, jurisdiction: regJurisdiction, businessType: regType, kybDocHash: `kyb-${regName.toLowerCase().replace(/\s/g, "-")}` }),
-                      });
-                      if (!res.ok) throw new Error(await res.text());
-                      toast.success("Institution registered (PENDING)", { id: toastId });
-                      setShowRegForm(false);
-                      setRegName(""); setRegNumber("");
-                      await loadInstitutions();
-                    } catch (e: any) {
-                      toast.error(e.message?.slice(0, 100), { id: toastId });
-                    } finally {
-                      setRegistering(false);
-                    }
-                  }}
-                >
-                  {registering ? <><Loader2 className="size-3.5 animate-spin mr-1" /> Registering...</> : <><Building2 className="size-3.5 mr-1" /> Register</>}
-                </Button>
-                <Button variant="outline" onClick={() => setShowRegForm(false)} disabled={registering}>Cancel</Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {showRegForm ? (
+        <RegisterWizard
+          agentUrl={AGENT_URL}
+          onComplete={() => { setShowRegForm(false); loadInstitutions(); }}
+          onCancel={() => setShowRegForm(false)}
+        />
+      ) : (
+        <Button
+          variant="outline"
+          className="w-full border-dashed border-fideza-lavender/30 text-fideza-lavender hover:bg-fideza-lavender/5"
+          onClick={() => setShowRegForm(true)}
+        >
+          <Plus className="size-4 mr-2" /> Register New Institution
+        </Button>
+      )}
 
       {/* Institution Table */}
       <Card>
