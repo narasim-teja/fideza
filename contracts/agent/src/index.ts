@@ -290,6 +290,9 @@ async function runPortfolioPipeline(constraintsJson: string) {
   console.log(`  Create TX:          ${txHash}`);
   console.log(`  Attestation TX:     ${bridgeResult.attestationTxHash}`);
   console.log(`  Bridge TX:          ${bridgeResult.bridgeTxHash}`);
+  if (bridgeResult.mirrorShareTokenAddress) {
+    console.log(`  Mirror Token:       ${bridgeResult.mirrorShareTokenAddress}`);
+  }
   console.log(`  ZK Proof TX:        ${zkProofTxHash}`);
   console.log(`  Bonds:              ${attestation.numBonds}`);
   console.log(`  Diversification:    ${attestation.diversificationScore}/10`);

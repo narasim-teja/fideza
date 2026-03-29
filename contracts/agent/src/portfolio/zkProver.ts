@@ -172,12 +172,12 @@ async function generateProof(portfolioId: string) {
   // 6. Generate proof
   console.log("  Generating proof with bb...");
   execSync(
-    "bb prove -b target/portfolio_proof.json -w target/portfolio_proof.gz -o target/proof",
+    "bb prove -b target/portfolio_proof.json -w target/portfolio_proof.gz -o target/proof -t evm-no-zk",
     { cwd: CIRCUIT_DIR, stdio: "inherit" },
   );
 
   // 7. Read proof bytes
-  const proofBytes = fs.readFileSync(path.join(CIRCUIT_DIR, "target/proof"));
+  const proofBytes = fs.readFileSync(path.join(CIRCUIT_DIR, "target/proof/proof"));
   console.log(`  Proof size: ${proofBytes.length} bytes`);
 
   // 8. Format public inputs as bytes32[] for Solidity

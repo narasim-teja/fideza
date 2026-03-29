@@ -15,7 +15,7 @@ import type { PortfolioAttestation } from "../types";
 export interface BridgeResult {
   attestationTxHash: string;
   bridgeTxHash: string;
-  transferToUserTxHash?: string;
+  mirrorShareTokenAddress?: string;
 }
 
 /**
@@ -119,7 +119,9 @@ export async function bridgePortfolioShares(
     return { attestationTxHash: attestReceipt.hash, bridgeTxHash: "no-balance" };
   }
 
-  const recipient = bridgePrep.bridgeWallet.address;
+  // Bridge directly to user's wallet when provided (like fund-privy.sh).
+  // The relayer mints mirror tokens to this address on the public chain.
+  const recipient = recipientAddress || bridgePrep.bridgeWallet.address;
   console.log(`  Bridging vault shares to public chain...`);
   console.log(`  Destination: public chain (ID: ${publicChainId})`);
   console.log(`  Recipient: ${recipient}`);
@@ -151,49 +153,54 @@ export async function bridgePortfolioShares(
     console.log("  Note: Mirror tokens will appear on public chain in ~30-60 seconds (relay)");
 
     // -----------------------------------------------------------------------
-    // 3. Transfer shares to user's wallet on public chain (if recipient given)
+    // 3. Discover mirror token address on public chain
+    //    Tokens are bridged directly to the user — no intermediate transfer
+    //    needed. We just need to find the mirror contract address so the
+    //    client can use it for balanceOf / approve / borrow.
     // -----------------------------------------------------------------------
-    let transferToUserTxHash: string | undefined;
+    let mirrorShareTokenAddress: string | undefined;
     if (recipientAddress) {
-      console.log(`  Waiting for mirror token on public chain (polling ~60s)...`);
-      const registeredKey = process.env.REGISTERED_PRIVATE_KEY ?? config.deployerPrivateKey;
-      const registeredPublicWallet = new ethers.Wallet(registeredKey!, publicProvider);
-      const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function transfer(address,uint256) returns (bool)"];
+      console.log(`  Waiting for mirror token on public chain (polling ~80s)...`);
+      const transferEventTopic = ethers.id("Transfer(address,address,uint256)");
+      const recipientPadded = ethers.zeroPadValue(recipientAddress, 32);
+      const blockBeforeBridge = await publicProvider.getBlockNumber();
 
-      // Poll for mirror token with optimized intervals
-      // Relay takes 30-60s: skip first 15s, then poll frequently in the likely window
+      // Poll for Transfer mint events (from 0x0 → recipient) on public chain
       const pollIntervals = [15000, 5000, 5000, 5000, 5000, 8000, 10000, 12000, 15000];
-      let mirrorBalance = BigInt(0);
-      const mirrorToken = new ethers.Contract(shareTokenAddress, erc20Abi, registeredPublicWallet);
       for (const interval of pollIntervals) {
         await new Promise((r) => setTimeout(r, interval));
         try {
-          mirrorBalance = await mirrorToken.balanceOf(registeredPublicWallet.address);
-          if (mirrorBalance > BigInt(0)) {
-            console.log(`  Mirror token arrived: ${ethers.formatEther(mirrorBalance)} shares`);
+          const logs = await publicProvider.getLogs({
+            fromBlock: Math.max(0, blockBeforeBridge - 5),
+            toBlock: "latest",
+            topics: [
+              transferEventTopic,
+              ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = 0x0 (mint)
+              recipientPadded,                              // to = user
+            ],
+          });
+
+          if (logs.length > 0) {
+            // The contract that emitted the mint Transfer IS the mirror token
+            mirrorShareTokenAddress = logs[logs.length - 1].address;
+            console.log(`  Mirror token discovered: ${mirrorShareTokenAddress}`);
             break;
           }
         } catch {
-          // Mirror contract may not exist yet
+          // Public chain may not have indexed the block yet
         }
       }
 
-      if (mirrorBalance > BigInt(0)) {
-        console.log(`  Transferring shares to user: ${recipientAddress}`);
-        const transferTx = await mirrorToken.transfer(recipientAddress, mirrorBalance, { type: 0 });
-        const transferReceipt = await transferTx.wait();
-        transferToUserTxHash = transferReceipt.hash;
-        console.log(`  Transfer TX: ${transferReceipt.hash}`);
-        console.log(`  Explorer: https://testnet-explorer.rayls.com/tx/${transferReceipt.hash}`);
-      } else {
-        console.log("  Mirror token not yet available — user can claim later");
+      if (!mirrorShareTokenAddress) {
+        console.log("  Mirror token address not yet discoverable — relay may still be in progress");
+        console.log("  User received shares directly; mirror address can be resolved later");
       }
     }
 
     return {
       attestationTxHash: attestReceipt.hash,
       bridgeTxHash: bridgeReceipt.hash,
-      transferToUserTxHash,
+      mirrorShareTokenAddress,
     };
   } catch (e: any) {
     console.log(`  Bridge teleport failed: ${e.message?.slice(0, 120)}`);

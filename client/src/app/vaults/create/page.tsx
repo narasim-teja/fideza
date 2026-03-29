@@ -50,9 +50,9 @@ const PIPELINE_STAGES = [
 interface PortfolioResult {
   portfolioId: string;
   shareTokenAddress: string;
+  mirrorShareTokenAddress?: string;
   attestationTxHash: string;
   bridgeTxHash: string;
-  transferToUserTxHash?: string;
   numBonds: number;
   diversificationScore: number;
   weightedCouponBps: number;
@@ -67,8 +67,8 @@ export default function CreatePortfolioPage() {
   const [minRating, setMinRating] = useState("BB-");
   const [maxRating, setMaxRating] = useState("AA");
   const [targetYieldBps, setTargetYieldBps] = useState(400);
-  const [maxSingleExposurePct, setMaxSingleExposurePct] = useState(30);
-  const [minBonds, setMinBonds] = useState(4);
+  const [maxSingleExposurePct, setMaxSingleExposurePct] = useState(40);
+  const [minBonds, setMinBonds] = useState(3);
   const [maturityPreference, setMaturityPreference] = useState("mixed");
   const [currencyPreference, setCurrencyPreference] = useState("any");
   const [riskTolerance, setRiskTolerance] = useState("moderate");
@@ -142,9 +142,11 @@ export default function CreatePortfolioPage() {
       setCurrentStage(PIPELINE_STAGES.length - 1);
       setResult(data);
 
-      // Cache share token address for lending resolution
-      if (data.portfolioId && data.shareTokenAddress) {
-        cacheShareToken(data.portfolioId, data.shareTokenAddress);
+      // Cache mirror address (public chain) for lending resolution.
+      // Fall back to shareTokenAddress if mirror not yet discovered.
+      if (data.portfolioId) {
+        const addressToCache = data.mirrorShareTokenAddress || data.shareTokenAddress;
+        cacheShareToken(data.portfolioId, addressToCache);
       }
     } catch (e: any) {
       setError(e.message || "Failed to connect to agent server");
@@ -454,11 +456,10 @@ export default function CreatePortfolioPage() {
                       <ExternalLink className="size-3" /> Attestation
                     </a>
                   )}
-                  {result.transferToUserTxHash && (
-                    <a href={explorerTxUrl(result.transferToUserTxHash)} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-emerald-400 hover:underline flex items-center gap-1">
-                      <ExternalLink className="size-3" /> Shares Sent
-                    </a>
+                  {result.mirrorShareTokenAddress && (
+                    <span className="text-xs text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="size-3" /> Mirror: {truncateAddress(result.mirrorShareTokenAddress)}
+                    </span>
                   )}
                   <Link
                     href={`/vaults/${result.portfolioId}`}

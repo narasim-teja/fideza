@@ -82,7 +82,7 @@ async function handlePortfolioRequest(constraintsJson: Record<string, unknown>, 
     portfolioId, shareTokenAddress, createTxHash: txHash,
     attestationTxHash: bridgeResult.attestationTxHash,
     bridgeTxHash: bridgeResult.bridgeTxHash,
-    transferToUserTxHash: bridgeResult.transferToUserTxHash,
+    mirrorShareTokenAddress: bridgeResult.mirrorShareTokenAddress,
     numBonds: attestation.numBonds,
     diversificationScore: attestation.diversificationScore,
     weightedCouponBps: attestation.weightedCouponBps,
@@ -137,7 +137,7 @@ const server = http.createServer(async (req, res) => {
         portfolioId,
         proof: "0x" + Buffer.from(proof).toString("hex"),
         publicInputs,
-        publicValues: pub,
+        publicValues: { ...pub, totalValue: pub.totalValue.toString() },
       });
     }
 

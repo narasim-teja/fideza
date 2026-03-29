@@ -89,7 +89,7 @@ ${JSON.stringify(bondSummary, null, 2)}
 USER CONSTRAINTS:
 ${JSON.stringify(constraints, bigintReplacer, 2)}
 
-Construct the optimal portfolio. Select at least ${constraints.minBonds} bonds. Weights must sum to exactly 10000 bps. No single bond may exceed ${constraints.maxSingleExposurePct * 100} bps.`;
+Construct the optimal portfolio. Select exactly 3 bonds (no more, no less). Weights must sum to exactly 10000 bps. No single bond may exceed ${constraints.maxSingleExposurePct * 100} bps.`;
 }
 
 /**
@@ -222,8 +222,8 @@ function greedyAllocate(
     return yieldB - yieldA;
   });
 
-  // Select top N bonds
-  const count = Math.max(constraints.minBonds, Math.min(sorted.length, 12));
+  // Select top N bonds (capped at 3 for ZK circuit compatibility)
+  const count = Math.max(constraints.minBonds, Math.min(sorted.length, 3));
   const selected = sorted.slice(0, count);
 
   // Equal-weight with cap redistribution

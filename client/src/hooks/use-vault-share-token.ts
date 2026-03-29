@@ -25,15 +25,18 @@ export function cacheShareToken(portfolioId: string, shareTokenAddress: string) 
 export function useVaultShareToken(portfolioId: Hex | undefined): Address | undefined {
   if (!portfolioId) return undefined;
 
-  // 1. Check localStorage cache
+  const key = portfolioId.toLowerCase();
+
+  // 1. Check localStorage cache (populated during UI portfolio creation)
   const cache = getCache();
-  const cached = cache[portfolioId.toLowerCase()];
+  const cached = cache[key];
   if (cached) return cached as Address;
 
-  // 2. Fall back to static known tokens
-  if (VAULT_SHARE_TOKENS.length > 0) {
-    return VAULT_SHARE_TOKENS[0].address;
+  // 2. Check known portfolioId → mirror address map
+  if (VAULT_SHARE_TOKENS[key]) {
+    return VAULT_SHARE_TOKENS[key];
   }
 
-  return undefined;
+  // 3. Fall back to default mirror address
+  return VAULT_SHARE_TOKENS["default"];
 }

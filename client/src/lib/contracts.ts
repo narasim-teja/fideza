@@ -44,13 +44,14 @@ export const VAULT_CONTRACTS = {
   zkPortfolioVerifier: "0x60A1c66c6C308Afb003769CD35fACF5f593B3dA4" as Address,
 } as const;
 
-/** Known vault share tokens on public chain (mirror tokens after bridge) */
-export const VAULT_SHARE_TOKENS = [
-  {
-    address: "0x200Df3Ad400ed1Bd35d6805C1E48d8Bf9eaFD4dA" as Address,
-    label: "AI Portfolio — Phase 8",
-  },
-] as const;
+/** Known vault share tokens on public chain (mirror tokens after bridge).
+ *  Maps portfolioId → mirror token address for on-chain resolution. */
+export const VAULT_SHARE_TOKENS: Record<string, Address> = {
+  // Phase 8 original
+  "default": "0x200Df3Ad400ed1Bd35d6805C1E48d8Bf9eaFD4dA" as Address,
+  // Latest portfolio
+  "0xaa6ad3f08700f76cf0aec07e99847e15a437ad8c7039f955a8b61bdec9c7a226": "0x995471CD1Ea6D74d6fbF8C6CDB1cabe0eef5DD06" as Address,
+};
 
 // ---------------------------------------------------------------------------
 // ABIs (inlined as const for wagmi type inference)
